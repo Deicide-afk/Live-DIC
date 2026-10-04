@@ -169,8 +169,6 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .sales-note{font-size:.68rem;color:var(--muted);margin-top:6px;text-align:center;}
 .btn-screenshot{width:100%;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;text-align:left;transition:background .2s;}
 .btn-screenshot:hover{background:var(--accent);border-color:var(--accent);}
-.ui-in{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;}
-.ui-in:focus{outline:none;border-color:var(--accent);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -194,13 +192,13 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
   <div class="topbar">
     <h1>RR Dashboard</h1>
     <span class="date-display" id="today-display"></span>
+    <span id="firebase-save-status" style="font-size:.62rem;color:var(--muted);margin-left:auto;margin-right:8px;white-space:nowrap">☁ Connecting...</span>
     <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ Light</button>
   </div>
   <div class="tabs">
     <button class="tab-btn active" id="main-btn-dic" onclick="switchMain('dic')">DIC</button>
     <button class="tab-btn" id="main-btn-sales" onclick="switchMain('sales')">Sales</button>
     <button class="tab-btn" id="main-btn-print" onclick="switchMain('print')">Print</button>
-    <button class="tab-btn" id="main-btn-ui" onclick="switchMain('ui')">UI</button>
   </div>
   <!-- DIC sub-tabs -->
   <div class="sub-tabs" id="sub-dic">
@@ -454,34 +452,6 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
   </div>
 
   <!-- PRINT TAB -->
-  <div id="tab-ui" class="tab-content">
-    <div style="padding:14px;max-width:460px">
-      <div class="section-label" style="padding-left:0">➕ Add New Product</div>
-      <div style="display:flex;flex-direction:column;gap:10px" id="ui-form">
-        <input class="ui-in" id="ui-code" placeholder="DIC name / code (e.g. UC REG)">
-        <div style="display:flex;gap:8px">
-          <select class="ui-in" id="ui-section" onchange="uiFillGroups()"><option value="cake">Cakes</option><option value="bread">Breads &amp; PBDs</option><option value="polv">Polvoron</option></select>
-          <select class="ui-in" id="ui-group"></select>
-        </div>
-        <input class="ui-in" id="ui-cutoff" placeholder="Cutoff (optional, e.g. -3 days)">
-        <input class="ui-in" id="ui-del" placeholder="Delivery / Yesterday DIC name (text in PDF, e.g. cake,reg,mango blossom)">
-        <div style="display:flex;gap:8px">
-          <input class="ui-in" id="ui-adq" placeholder="ADQ name (sales report keyword)" style="flex:3">
-          <input class="ui-in" id="ui-pack" type="number" min="1" value="1" style="flex:1" title="Pack size">
-        </div>
-        <button class="btn-primary" onclick="uiReview()">Review details</button>
-      </div>
-      <div id="ui-confirm" style="display:none;background:var(--card);border:1px solid var(--accent2);border-radius:12px;padding:14px;margin-top:12px">
-        <div style="font-weight:700;color:var(--accent2);margin-bottom:8px">Please confirm</div>
-        <div id="ui-summary" style="font-size:.8rem;line-height:1.8"></div>
-        <div class="modal-actions"><button class="btn-cancel" onclick="uiEdit()">Edit</button><button class="btn-save" onclick="uiConfirm()">Confirm &amp; Add</button></div>
-      </div>
-      <div id="ui-msg" style="font-size:.78rem;margin-top:10px;color:var(--green)"></div>
-      <div class="section-label" style="padding-left:0;margin-top:18px">Added Products</div>
-      <div id="ui-list" style="font-size:.78rem"></div>
-    </div>
-  </div>
-
   <div id="tab-print" class="tab-content">
     <div style="padding:20px">
       <div class="section-label" style="padding-left:0;margin-bottom:8px">Save as PNG</div>
@@ -858,27 +828,86 @@ const DEL_MAP = [
   ['accessory,half maraschino',                 'HALF CHERRIES'],
 ];
 
-// ── CUSTOM PRODUCTS (added from UI tab, stored in this browser) ──
-const SECTION_LISTS = {cake:CAKE_PRODUCTS, bread:BREAD_PRODUCTS, polv:POLV_PRODUCTS};
-function loadCustom(){try{return JSON.parse(localStorage.getItem('rr_custom_products')||'[]');}catch(e){return [];}}
-function saveCustom(a){try{localStorage.setItem('rr_custom_products',JSON.stringify(a));}catch(e){}}
-function applyCustom(c){
-  const list=SECTION_LISTS[c.section]; if(!list) return;
-  if(!list.some(p=>p.code===c.code)){
-    let gi=list.findIndex(p=>p.group===c.group), at=list.length;
-    if(gi>=0){at=gi+1;while(at<list.length&&!list[at].group)at++;}
-    list.splice(at,0,{code:c.code,cutoff:c.cutoff||''});
-  }
-  if(c.del) DEL_MAP.unshift([c.del.toLowerCase(),c.code]);
-  if(c.adq) ADQ_MAP.unshift([c.adq.toLowerCase(),c.code,c.pack||1]);
-}
-loadCustom().forEach(applyCustom);
-
 // ── STATE ─────────────────────────────────────────────────────
 const counts = {cake:{},bread:{},polv:{}};
 const sold   = {cake:{},bread:{},polv:{}};  // DIC SOLD counts
 const delData = {del1:{},del2:{},del3:{}};
 let adqData = {};
+let firebaseHydrated = false;
+
+function firebaseSnapshot(){
+  return {
+    dic: counts,
+    sold,
+    delivery: delData,
+    adq: adqData,
+    sales: {
+      daily: {
+        sales:getSalesVal('s-sales'), tc:getSalesVal('s-tc'), waste:getSalesVal('s-waste'),
+        discount:getSalesVal('s-discount'), grab:getSalesVal('s-grab'), fpanda:getSalesVal('s-fpanda')
+      },
+      mtd: {
+        mtd_tgt:getSalesVal('s-mtd-tgt'), mtd_ly:getSalesVal('s-mtd-ly'),
+        mtd:getSalesVal('s-mtd'), ac:getSalesVal('s-ac')
+      }
+    },
+    count: countCounts,
+    mtdVar: mtdVarData,
+    ydic: ydicData
+  };
+}
+
+function autoSaveFirebase(immediate=false){
+  if(!firebaseHydrated || !window.RRFB?.saveDay) return;
+  window.RRFB.saveDay(firebaseSnapshot(), immediate);
+}
+
+async function loadFirebaseData(){
+  if(!window.RRFB?.loadDay) return;
+  if(window.RRFB.setStatus) window.RRFB.setStatus('☁ Loading...');
+  try{
+    const data=await window.RRFB.loadDay();
+    if(data){
+      Object.assign(counts, data.dic||{});
+      Object.assign(sold, data.sold||{});
+      Object.assign(delData, data.delivery||{});
+      adqData=data.adq||{};
+      if(data.count){Object.keys(countCounts).forEach(k=>countCounts[k]=data.count[k]||{});}
+      mtdVarData=data.mtdVar||{};
+      ydicData=data.ydic||{};
+      const daily=data.sales?.daily||{}, mtd=data.sales?.mtd||{};
+      [['sales',daily.sales],['tc',daily.tc],['waste',daily.waste],['discount',daily.discount],['grab',daily.grab],['fpanda',daily.fpanda],['mtd-tgt',mtd.mtd_tgt],['mtd-ly',mtd.mtd_ly],['mtd',mtd.mtd],['ac',mtd.ac]].forEach(([id,v])=>{
+        const el=document.getElementById('s-'+id);
+        if(el && v!==undefined && v!==null){el.value=v;el.dataset.raw=v;}
+      });
+    }else{
+      // First Firebase run: preserve existing browser-stored ADQ/Sales data.
+      loadADQ();
+      loadSales();
+    }
+    firebaseHydrated=true;
+    // Re-render the existing tables from the Firebase state.
+    buildTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);
+    buildTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);
+    buildTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
+    buildCountTable('cnt-cake',CAKE_PRODUCTS,CAKE_COUNT_DAYS,true);
+    buildCountTable('cnt-bread',BREAD_PRODUCTS,BREAD_COUNT_DAYS,false);
+    buildCountTable('cnt-polv',POLV_PRODUCTS,BREAD_COUNT_DAYS,false);
+    buildSoldTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);
+    buildSoldTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);
+    buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
+    renderPSTable();
+    renderYDICTable();
+    updateMTD();
+    refreshCountVariances();
+    if(window.RRFB.setStatus) window.RRFB.setStatus('✓ Firebase synced');
+    // Migrate existing browser data only when this date had no Firebase document.
+    if(!data) autoSaveFirebase(true);
+  }catch(e){
+    console.error('[Firebase] load failed:',e);
+    if(window.RRFB.setStatus) window.RRFB.setStatus('⚠ Firebase error',false);
+  }
+}
 
 // ── PASSWORD ─────────────────────────────────────────────────
 function checkPw(){
@@ -895,7 +924,7 @@ document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='E
 // ── TAB SWITCH ───────────────────────────────────────────────
 const DIC_SUBS=['dic','count','prodsold','delivery','dicsold','mtdvar','ydic'];
 function switchMain(main){
-  ['dic','sales','print','ui'].forEach(m=>{
+  ['dic','sales','print'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
   });
   // show/hide sub-tab bar
@@ -932,8 +961,6 @@ function init(){
   document.getElementById('del1-date').textContent=fmtFull(addDays(d,1));
   document.getElementById('del2-date').textContent=fmtFull(addDays(d,2));
   document.getElementById('del3-date').textContent=fmtFull(addDays(d,3));
-  // Load saved ADQ
-  loadADQ();
   // Build tables
   buildTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);
   buildTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);
@@ -945,10 +972,9 @@ function init(){
   buildSoldTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);
   buildSoldTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);
   buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
-  // Load saved sales
-  loadSales();
   // Render PS table
   renderPSTable();
+  loadFirebaseData();
 }
 
 // ── BUILD TABLE ──────────────────────────────────────────────
@@ -1104,6 +1130,7 @@ function saveModal(){
   document.querySelector('.btn-save').onclick=saveModal;
   document.getElementById('var-sign-row').style.display='none';
   closeModal();
+  autoSaveFirebase(true);
 }
 
 function updateRow(tid,code){
@@ -1223,6 +1250,7 @@ function saveSoldModal(){
   updateRow(tid,code); // update DIC total with subtraction
   document.querySelector('.btn-save').onclick=saveModal;
   closeModal();
+  autoSaveFirebase(true);
 }
 
 function updateSoldRow(tid,code){
@@ -1304,6 +1332,7 @@ function savePackModal(){
   });
   document.querySelector('.btn-save').onclick=saveModal;
   closeModal();
+  autoSaveFirebase(true);
 }
 
 function getCountTotal(base, tcode){
@@ -1683,6 +1712,7 @@ function extractDel(slot){
     }
   });
   document.getElementById('result-'+slot).textContent=`✓ ${matched} matched${unmatched.length?` · ${unmatched.length} unmatched`:''}`;
+  autoSaveFirebase(true);
   // Refresh Yesterday's DIC view if it has been shown
   if(document.getElementById('ydic-result').style.display!=='none'||Object.keys(delData.del1).length||Object.keys(delData.del2).length){
     document.getElementById('ydic-result').style.display='block';
@@ -1746,6 +1776,7 @@ function calcADQ(){
 
   saveADQStorage();
   renderPSTable();
+  autoSaveFirebase(true);
   // Update DIC tables
   ['cake','bread','polv'].forEach(tid=>{
     const products=tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS;
@@ -1766,6 +1797,7 @@ function clearPS(){
   if(!confirm('Clear saved ADQ data?'))return;
   adqData={};
   saveADQStorage();
+  autoSaveFirebase(true);
   document.getElementById('ps-paste').value='';
   document.getElementById('ps-result-info').textContent='Cleared.';
   renderPSTable();
@@ -1821,6 +1853,7 @@ function saveSales(){
     });
     localStorage.setItem('rr_sales',JSON.stringify(all));
     updateMTD();
+    autoSaveFirebase(true);
     document.getElementById('sales-save-note').textContent='✓ Saved '+todayKey;
   }catch(e){}
 }
@@ -2354,6 +2387,7 @@ async function loadMTDVar(input){
       ? '<b>No DIC mapping:</b><br>'+unmatched.map(u=>`${u.name.substring(0,45)} (${u.qty})`).join('<br>') : '';
     document.getElementById('mtdvar-result').style.display = 'block';
     document.getElementById('mtdvar-status').textContent = `✓ Loaded — ${matched.length} products updated in DIC`;
+    autoSaveFirebase(true);
 
   } catch(e){
     document.getElementById('mtdvar-status').textContent = 'Error: '+e.message;
@@ -2379,6 +2413,8 @@ function fmtSales(el){
   el.dataset.raw = raw;
   // Trigger MTD update if this is an MTD field
   if(el.id==='s-mtd'||el.id==='s-mtd-tgt') updateMTD();
+  clearTimeout(window.__rrSalesSaveTimer);
+  window.__rrSalesSaveTimer=setTimeout(()=>autoSaveFirebase(false),600);
 }
 function getSalesVal(id){
   const el=document.getElementById(id);
@@ -2478,6 +2514,7 @@ async function loadYDIC(input){
     renderYDICTable();
     refreshCountVariances();
     console.log('[YDIC] ydicData after PDF parse:', Object.keys(ydicData).length, 'products', ydicData);
+    autoSaveFirebase(true);
     // Refresh Variance column across DIC tables
     ['cake','bread','polv'].forEach(tid=>{
       Object.keys(counts[tid]||{}).forEach(code=>updateRow(tid,code));
@@ -2489,55 +2526,10 @@ async function loadYDIC(input){
 }
 
 function applyYDIC(){ renderYDICTable(); }
-
-// ── UI TAB ──
-let uiPending=null;
-function uiFillGroups(){
-  const list=SECTION_LISTS[document.getElementById('ui-section').value];
-  document.getElementById('ui-group').innerHTML=list.filter(p=>p.group).map(p=>`<option>${p.group}</option>`).join('');
-}
-function uiReview(){
-  const g=id=>document.getElementById(id).value.trim();
-  const c={code:g('ui-code').toUpperCase(),section:g('ui-section'),group:g('ui-group'),cutoff:g('ui-cutoff'),del:g('ui-del'),adq:g('ui-adq'),pack:parseInt(g('ui-pack'))||1};
-  const msg=document.getElementById('ui-msg'); msg.style.color='var(--accent)';
-  if(!c.code){msg.textContent='Enter the DIC name first.';return;}
-  if(Object.values(SECTION_LISTS).some(l=>l.some(p=>p.code===c.code))){msg.textContent=c.code+' already exists in the DIC.';return;}
-  msg.textContent=''; uiPending=c;
-  const secName={cake:'Cakes',bread:'Breads & PBDs',polv:'Polvoron'}[c.section];
-  document.getElementById('ui-summary').innerHTML=
-    `<b>DIC:</b> ${c.code} <span style="color:var(--muted)">(${secName} › ${c.group})</span><br>`+
-    `<b>Cutoff:</b> ${c.cutoff||'—'}<br>`+
-    `<b>Delivery &amp; Yesterday DIC:</b> ${c.del||'<i>not mapped</i>'}<br>`+
-    `<b>ADQ:</b> ${c.adq?c.adq+' (pack × '+c.pack+')':'<i>not mapped</i>'}`;
-  document.getElementById('ui-confirm').style.display='block';
-}
-function uiEdit(){document.getElementById('ui-confirm').style.display='none';}
-function uiConfirm(){
-  if(!uiPending) return;
-  const all=loadCustom(); all.push(uiPending); saveCustom(all); applyCustom(uiPending);
-  rebuildTables();
-  const msg=document.getElementById('ui-msg'); msg.style.color='var(--green)'; msg.textContent='✓ '+uiPending.code+' added.';
-  uiPending=null; uiEdit();
-  ['ui-code','ui-cutoff','ui-del','ui-adq'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('ui-pack').value=1; uiRenderList();
-}
-function uiRemove(i){
-  const all=loadCustom(); const c=all.splice(i,1)[0]; if(!c) return;
-  if(!confirm('Remove '+c.code+'? It disappears after you refresh the page.')) {all.splice(i,0,c);return;}
-  saveCustom(all); uiRenderList();
-  document.getElementById('ui-msg').style.color='var(--muted)'; document.getElementById('ui-msg').textContent=c.code+' removed — refresh to update the tables.';
-}
-function uiRenderList(){
-  const a=loadCustom();
-  document.getElementById('ui-list').innerHTML=a.length?a.map((c,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span><b>${c.code}</b> <span style="color:var(--muted)">· ${c.group}${c.del?' · Del ✓':''}${c.adq?' · ADQ ✓':''}</span></span><button onclick="uiRemove(${i})" style="background:none;border:none;color:var(--accent);cursor:pointer">✕</button></div>`).join(''):'<span style="color:var(--muted)">None yet.</span>';
-}
-function rebuildTables(){
-  buildTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
-  buildCountTable('cnt-cake',CAKE_PRODUCTS,CAKE_COUNT_DAYS,true);buildCountTable('cnt-bread',BREAD_PRODUCTS,BREAD_COUNT_DAYS,false);buildCountTable('cnt-polv',POLV_PRODUCTS,BREAD_COUNT_DAYS,false);
-  buildSoldTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildSoldTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
-  if(typeof renderYDICTable==='function') renderYDICTable();
-}
-uiFillGroups(); uiRenderList();
+</script>
+<script type="module">
+  import './firebase-sync.js';
 </script>
 </body>
 </html>
+
