@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This is a simple store-counting tool, not a private data system.
+    // Only the RR7024 daily records are exposed by this rule.
+    match /stores/RR7024/daily/{dayId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
