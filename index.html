@@ -193,6 +193,7 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     <h1>RR Dashboard</h1>
     <span class="date-display" id="today-display"></span>
     <span id="firebase-save-status" style="font-size:.62rem;color:var(--muted);margin-left:auto;margin-right:8px;white-space:nowrap">☁ Connecting...</span>
+    <button class="theme-toggle" id="clear-dic-btn" onclick="clearTodayDIC()">🧹 Clear DIC</button>
     <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ Light</button>
   </div>
   <div class="tabs">
@@ -206,7 +207,7 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     <button class="sub-btn" id="sub-btn-count" onclick="switchTab('count')">Count</button>
     <button class="sub-btn" id="sub-btn-prodsold" onclick="switchTab('prodsold')">Product Sold</button>
     <button class="sub-btn" id="sub-btn-delivery" onclick="switchTab('delivery')">Delivery</button>
-    <button class="sub-btn" id="sub-btn-dicsold" onclick="switchTab('dicsold')">DIC Sold</button>
+    <button class="sub-btn" id="sub-btn-products" onclick="switchTab('products')">Manage Products</button>
     <button class="sub-btn" id="sub-btn-mtdvar" onclick="switchTab('mtdvar')">MTD Var</button>
     <button class="sub-btn" id="sub-btn-ydic" onclick="switchTab('ydic')">Yesterday's DIC</button>
   </div>
@@ -352,6 +353,22 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
       <table class="dic-table"><thead id="bread-sold-thead"></thead><tbody id="bread-sold-tbody"></tbody></table>
       <div class="section-label" style="margin-top:16px">🍬 Polvoron</div>
       <table class="dic-table"><thead id="polv-sold-thead"></thead><tbody id="polv-sold-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- PRODUCT MANAGEMENT TAB -->
+  <div id="tab-products" class="tab-content">
+    <div class="dic-container" style="max-width:760px">
+      <div class="section-label">Manage DIC Products</div>
+      <p style="font-size:.78rem;color:var(--muted);line-height:1.5">Add products to or remove them from the DIC. Product changes are saved with your daily Firebase data when configured.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0">
+        <label style="font-size:.75rem">Product name / code<input id="pm-code" maxlength="60" placeholder="e.g. NEW CAKE" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"></label>
+        <label style="font-size:.75rem">Category<select id="pm-category" onchange="toggleCakeSubtype()" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"><option value="cake">Cakes</option><option value="bread">Pastry</option><option value="polv">Polvoron</option></select></label>
+        <label id="pm-subtype-wrap" style="font-size:.75rem">Cake type<select id="pm-subtype" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"><option>JUNIOR</option><option>PETITE</option><option>REGULAR</option><option>ROLLS</option><option>DEDICATION CAKES</option></select></label>
+      </div>
+      <button class="btn-calc" onclick="addManagedProduct()">＋ Add Product</button>
+      <div id="pm-message" style="font-size:.75rem;margin:10px 0;color:var(--green)"></div>
+      <div id="pm-list"></div>
     </div>
   </div>
 
@@ -616,6 +633,56 @@ const POLV_PRODUCTS = [
   {code:'PVNASTD15',cutoff:'-5 days'},{code:'PVNASTD22',cutoff:'-5 days'},
 ];
 
+// User-managed products are persisted in the daily Firebase document.
+let managedProducts = {cake:[],bread:[],polv:[]};
+let managedProductTypes = {};
+try{const savedProducts=JSON.parse(localStorage.getItem('rr-managed-products')||'null');if(savedProducts){managedProducts=savedProducts.products||managedProducts;managedProductTypes=savedProducts.types||{};}}catch(e){}
+function persistManagedProducts(){try{localStorage.setItem('rr-managed-products',JSON.stringify({products:managedProducts,types:managedProductTypes}));}catch(e){}}
+function productArray(tid){return tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS;}
+function applyManagedProducts(){
+ ['cake','bread','polv'].forEach(tid=>{const arr=productArray(tid);(managedProducts[tid]||[]).forEach(code=>{if(!arr.some(p=>p.code===code)){const subtype=(managedProductTypes[code]||'JUNIOR');if(tid==='cake'){const group=subtype==='REGULAR'?'REGULAR':subtype==='ROLLS'?'ROLLS':subtype==='DEDICATION CAKES'?'DEDICATION CAKES':subtype;let idx=arr.findIndex(p=>p.group===group);if(idx>=0){idx++;while(idx<arr.length&&!arr[idx].group)idx++;arr.splice(idx,0,{code,cutoff:'-3 days',managed:true,subtype});}else arr.push({code,cutoff:'-3 days',managed:true,subtype});}else if(tid==='bread'){const idx=arr.findIndex(p=>p.group==='PASTRY PACKS');arr.splice(idx<0?arr.length:idx,0,{code,cutoff:'',managed:true});}else arr.push({code,cutoff:'-5 days',managed:true});}});});
+}
+function productCategoryName(tid){return tid==='cake'?'Cakes':tid==='bread'?'Pastry':'Polvoron';}
+function toggleCakeSubtype(){document.getElementById('pm-subtype-wrap').style.display=document.getElementById('pm-category').value==='cake'?'block':'none';}
+function renderManagedProducts(){
+ const host=document.getElementById('pm-list'); if(!host)return;
+ host.innerHTML=['cake','bread','polv'].map(tid=>{
+  const rows=(managedProducts[tid]||[]).map(code=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px solid var(--border)"><span>${escapeHTML(code)}</span><button class="btn-clear-ps" style="flex:0 0 auto;padding:6px 10px" onclick="removeManagedProduct('${tid}','${encodeURIComponent(code)}')">Remove</button></div>`).join('');
+  return `<div style="margin-top:16px"><div class="section-label">${productCategoryName(tid)} (added products)</div>${rows||'<p style="font-size:.75rem;color:var(--muted)">No added products.</p>'}</div>`;
+ }).join('');
+}
+function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function refreshProductTables(){
+ buildTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
+ buildCountTable('cnt-cake',CAKE_PRODUCTS,CAKE_COUNT_DAYS,true);buildCountTable('cnt-bread',BREAD_PRODUCTS,BREAD_COUNT_DAYS,false);buildCountTable('cnt-polv',POLV_PRODUCTS,BREAD_COUNT_DAYS,false);
+ buildSoldTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildSoldTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
+}
+function addManagedProduct(){
+ const code=document.getElementById('pm-code').value.trim();const tid=document.getElementById('pm-category').value;
+ if(!code){document.getElementById('pm-message').textContent='Enter a product name or code.';return;}
+ const all=[...CAKE_PRODUCTS,...BREAD_PRODUCTS,...POLV_PRODUCTS].filter(p=>p.code).map(p=>p.code.toLowerCase());
+ if(all.includes(code.toLowerCase())){document.getElementById('pm-message').textContent='That product already exists.';return;}
+ if(!managedProducts[tid])managedProducts[tid]=[];managedProducts[tid].push(code);
+ if(tid==='cake'){const subtype=document.getElementById('pm-subtype').value;managedProductTypes[code]=subtype;const group=subtype==='REGULAR'?'REGULAR':subtype==='ROLLS'?'ROLLS':subtype==='DEDICATION CAKES'?'DEDICATION CAKES':subtype;let idx=CAKE_PRODUCTS.findIndex(p=>p.group===group);if(idx>=0){idx++;while(idx<CAKE_PRODUCTS.length&&!CAKE_PRODUCTS[idx].group)idx++;CAKE_PRODUCTS.splice(idx,0,{code,cutoff:'-3 days',managed:true,subtype});}else CAKE_PRODUCTS.push({code,cutoff:'-3 days',managed:true,subtype});}
+ else if(tid==='bread'){const idx=BREAD_PRODUCTS.findIndex(p=>p.group==='PASTRY PACKS');BREAD_PRODUCTS.splice(idx<0?BREAD_PRODUCTS.length:idx,0,{code,cutoff:'',managed:true});}
+ else POLV_PRODUCTS.push({code,cutoff:'-5 days',managed:true});
+ counts[tid][code]=counts[tid][code]||{};document.getElementById('pm-code').value='';document.getElementById('pm-message').textContent='Product added.';persistManagedProducts();
+ refreshProductTables();renderManagedProducts();autoSaveFirebase(true);
+}
+function removeManagedProduct(tid,encoded){
+ const code=decodeURIComponent(encoded);if(!confirm(`Remove ${code} from the product list? Existing encoded counts for this product will also be removed from this day's DIC.`))return;
+ managedProducts[tid]=(managedProducts[tid]||[]).filter(c=>c!==code);
+ const arr=productArray(tid);const i=arr.findIndex(p=>p.code===code&&p.managed);if(i>=0)arr.splice(i,1);
+ delete counts[tid][code];delete sold[tid][code];delete managedProductTypes[code];persistManagedProducts();
+ refreshProductTables();renderManagedProducts();autoSaveFirebase(true);
+}
+function clearTodayDIC(){
+ if(!confirm("Clear only today's encoded DIC quantities in Day 1, Day 2, Day 3, Day 4 and LA for all products? Variance, sales, delivery and other dates will remain unchanged."))return;
+ ['cake','bread','polv'].forEach(tid=>{Object.keys(counts[tid]||{}).forEach(code=>{const c=counts[tid][code];['d1','d2','d3','d4','la'].forEach(k=>c[k]='');updateRow(tid,code);recalcWithPacks(tid,code);});});
+ refreshProductTables();autoSaveFirebase(true);
+}
+
+
 // ── ADQ MAPPING from sales report product name → DIC code ────
 // Format: [salesReportKeyword (lowercase), dicCode, packSize]
 const ADQ_MAP = [
@@ -857,7 +924,9 @@ function firebaseSnapshot(){
     },
     count: countCounts,
     mtdVar: mtdVarData,
-    ydic: ydicData
+    ydic: ydicData,
+    managedProducts: managedProducts,
+    managedProductTypes: managedProductTypes
   };
 }
 
@@ -879,6 +948,9 @@ async function loadFirebaseData(){
       if(data.count){Object.keys(countCounts).forEach(k=>countCounts[k]=data.count[k]||{});}
       mtdVarData=data.mtdVar||{};
       ydicData=data.ydic||{};
+      if(data.managedProducts) managedProducts=data.managedProducts;
+      if(data.managedProductTypes) managedProductTypes=data.managedProductTypes;
+      applyManagedProducts();persistManagedProducts();
       const daily=data.sales?.daily||{}, mtd=data.sales?.mtd||{};
       [['sales',daily.sales],['tc',daily.tc],['waste',daily.waste],['discount',daily.discount],['grab',daily.grab],['fpanda',daily.fpanda],['mtd-tgt',mtd.mtd_tgt],['mtd-ly',mtd.mtd_ly],['mtd',mtd.mtd],['ac',mtd.ac]].forEach(([id,v])=>{
         const el=document.getElementById('s-'+id);
@@ -902,6 +974,8 @@ async function loadFirebaseData(){
     buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
     renderPSTable();
     renderYDICTable();
+    renderManagedProducts();
+    ['cake','bread','polv'].forEach(tid=>{ const ps=tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS; ps.forEach(p=>{if(p.code)recalcWithPacks(tid,p.code);}); });
     updateMTD();
     refreshCountVariances();
     if(window.RRFB.setStatus) window.RRFB.setStatus('✓ Firebase synced');
@@ -926,7 +1000,7 @@ function checkPw(){
 document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw();});
 
 // ── TAB SWITCH ───────────────────────────────────────────────
-const DIC_SUBS=['dic','count','prodsold','delivery','dicsold','mtdvar','ydic'];
+const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic'];
 function switchMain(main){
   ['dic','sales','print'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
@@ -978,6 +1052,7 @@ function init(){
   buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
   // Render PS table
   renderPSTable();
+  renderManagedProducts();
   loadFirebaseData();
 }
 
