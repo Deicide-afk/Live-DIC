@@ -360,13 +360,15 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
   <div id="tab-products" class="tab-content">
     <div class="dic-container" style="max-width:760px">
       <div class="section-label">Manage DIC Products</div>
-      <p style="font-size:.78rem;color:var(--muted);line-height:1.5">Add products to or remove them from the DIC. Product changes are saved with your daily Firebase data when configured.</p>
+      <p style="font-size:.78rem;color:var(--muted);line-height:1.5">Add products, remove existing products, and connect report names to DIC product codes. Product settings are saved separately in Firebase so they persist across dates and devices. You can enter multiple mapping names separated by a vertical bar ( | ).</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0">
-        <label style="font-size:.75rem">Product name / code<input id="pm-code" maxlength="60" placeholder="e.g. NEW CAKE" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"></label>
+        <label style="font-size:.75rem">Product name / DIC code<input id="pm-code" maxlength="60" placeholder="e.g. NEW CAKE" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"></label>
         <label style="font-size:.75rem">Category<select id="pm-category" onchange="toggleCakeSubtype()" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"><option value="cake">Cakes</option><option value="bread">Pastry</option><option value="polv">Polvoron</option></select></label>
         <label id="pm-subtype-wrap" style="font-size:.75rem">Cake type<select id="pm-subtype" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"><option>JUNIOR</option><option>PETITE</option><option>REGULAR</option><option>ROLLS</option><option>DEDICATION CAKES</option></select></label>
+        <label style="font-size:.75rem">ADQ / sales report mapping name<input id="pm-adq-map" maxlength="200" placeholder="e.g. butter mamon pack 5s" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"></label>
+        <label style="font-size:.75rem">Delivery mapping name<input id="pm-del-map" maxlength="200" placeholder="e.g. pastry, butter mamon, 5s" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)"></label>
       </div>
-      <button class="btn-calc" onclick="addManagedProduct()">＋ Add Product</button>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn-calc" onclick="addManagedProduct()">＋ Add Product</button><button class="btn-calc" style="background:var(--surface);color:var(--text);border:1px solid var(--border)" onclick="saveProductMapping()">Save Mapping for Existing Product</button></div>
       <div id="pm-message" style="font-size:.75rem;margin:10px 0;color:var(--green)"></div>
       <div id="pm-list"></div>
     </div>
@@ -633,22 +635,45 @@ const POLV_PRODUCTS = [
   {code:'PVNASTD15',cutoff:'-5 days'},{code:'PVNASTD22',cutoff:'-5 days'},
 ];
 
-// User-managed products are persisted in the daily Firebase document.
+// Product settings are saved in a dedicated Firebase config document (not per-day data).
 let managedProducts = {cake:[],bread:[],polv:[]};
 let managedProductTypes = {};
-try{const savedProducts=JSON.parse(localStorage.getItem('rr-managed-products')||'null');if(savedProducts){managedProducts=savedProducts.products||managedProducts;managedProductTypes=savedProducts.types||{};}}catch(e){}
-function persistManagedProducts(){try{localStorage.setItem('rr-managed-products',JSON.stringify({products:managedProducts,types:managedProductTypes}));}catch(e){}}
+let disabledProducts = {cake:[],bread:[],polv:[]};
+let productMappings = {};
+let productConfigLoaded = false;
+try{
+ const savedProducts=JSON.parse(localStorage.getItem('rr-managed-products')||'null');
+ if(savedProducts){managedProducts=savedProducts.products||managedProducts;managedProductTypes=savedProducts.types||{};disabledProducts=savedProducts.disabled||disabledProducts;productMappings=savedProducts.mappings||{};}
+}catch(e){}
+function persistManagedProducts(){
+ const payload={products:managedProducts,types:managedProductTypes,disabled:disabledProducts,mappings:productMappings};
+ try{localStorage.setItem('rr-managed-products',JSON.stringify(payload));}catch(e){}
+ if(window.RRFB?.saveProductConfig) window.RRFB.saveProductConfig(payload).catch(err=>console.error('[Firebase] product settings save failed:',err));
+}
 function productArray(tid){return tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS;}
+function applyProductSettings(){
+ ['cake','bread','polv'].forEach(tid=>{
+  const arr=productArray(tid);
+  const disabled=new Set(disabledProducts[tid]||[]);
+  for(let i=arr.length-1;i>=0;i--){if(arr[i].code&&disabled.has(arr[i].code)&&!arr[i].managed)arr.splice(i,1);}
+ });
+ applyManagedProducts();
+}
 function applyManagedProducts(){
- ['cake','bread','polv'].forEach(tid=>{const arr=productArray(tid);(managedProducts[tid]||[]).forEach(code=>{if(!arr.some(p=>p.code===code)){const subtype=(managedProductTypes[code]||'JUNIOR');if(tid==='cake'){const group=subtype==='REGULAR'?'REGULAR':subtype==='ROLLS'?'ROLLS':subtype==='DEDICATION CAKES'?'DEDICATION CAKES':subtype;let idx=arr.findIndex(p=>p.group===group);if(idx>=0){idx++;while(idx<arr.length&&!arr[idx].group)idx++;arr.splice(idx,0,{code,cutoff:'-3 days',managed:true,subtype});}else arr.push({code,cutoff:'-3 days',managed:true,subtype});}else if(tid==='bread'){const idx=arr.findIndex(p=>p.group==='PASTRY PACKS');arr.splice(idx<0?arr.length:idx,0,{code,cutoff:'',managed:true});}else arr.push({code,cutoff:'-5 days',managed:true});}});});
+ ['cake','bread','polv'].forEach(tid=>{const arr=productArray(tid);(managedProducts[tid]||[]).forEach(code=>{if(!(disabledProducts[tid]||[]).includes(code)&&!arr.some(p=>p.code===code)){const subtype=(managedProductTypes[code]||'JUNIOR');if(tid==='cake'){const group=subtype==='REGULAR'?'REGULAR':subtype==='ROLLS'?'ROLLS':subtype==='DEDICATION CAKES'?'DEDICATION CAKES':subtype;let idx=arr.findIndex(p=>p.group===group);if(idx>=0){idx++;while(idx<arr.length&&!arr[idx].group)idx++;arr.splice(idx,0,{code,cutoff:'-3 days',managed:true,subtype});}else arr.push({code,cutoff:'-3 days',managed:true,subtype});}else if(tid==='bread'){const idx=arr.findIndex(p=>p.group==='PASTRY PACKS');arr.splice(idx<0?arr.length:idx,0,{code,cutoff:'',managed:true});}else arr.push({code,cutoff:'-5 days',managed:true});}});});
 }
 function productCategoryName(tid){return tid==='cake'?'Cakes':tid==='bread'?'Pastry':'Polvoron';}
 function toggleCakeSubtype(){document.getElementById('pm-subtype-wrap').style.display=document.getElementById('pm-category').value==='cake'?'block':'none';}
 function renderManagedProducts(){
  const host=document.getElementById('pm-list'); if(!host)return;
  host.innerHTML=['cake','bread','polv'].map(tid=>{
-  const rows=(managedProducts[tid]||[]).map(code=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px solid var(--border)"><span>${escapeHTML(code)}</span><button class="btn-clear-ps" style="flex:0 0 auto;padding:6px 10px" onclick="removeManagedProduct('${tid}','${encodeURIComponent(code)}')">Remove</button></div>`).join('');
-  return `<div style="margin-top:16px"><div class="section-label">${productCategoryName(tid)} (added products)</div>${rows||'<p style="font-size:.75rem;color:var(--muted)">No added products.</p>'}</div>`;
+  const arr=productArray(tid).filter(p=>p.code);
+  const rows=arr.map(p=>{
+   const mapping=productMappings[p.code]||{};
+   const details=[mapping.adq?`ADQ: ${mapping.adq}`:'ADQ: —',mapping.delivery?`Delivery: ${mapping.delivery}`:'Delivery: —'].join(' · ');
+   return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px solid var(--border)"><div style="min-width:0"><div style="font-weight:600">${escapeHTML(p.code)}</div><div style="font-size:.68rem;color:var(--muted);overflow-wrap:anywhere">${details.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div><div style="display:flex;gap:5px;flex:0 0 auto"><button class="btn-clear-ps" style="padding:6px 8px" onclick="editProductMapping('${tid}','${encodeURIComponent(p.code)}')">Mapping</button><button class="btn-clear-ps" style="padding:6px 8px" onclick="removeProduct('${tid}','${encodeURIComponent(p.code)}')">Delete</button></div></div>`;
+  }).join('');
+  return `<div style="margin-top:16px"><div class="section-label">${productCategoryName(tid)} — current products (${arr.length})</div>${rows||'<p style="font-size:.75rem;color:var(--muted)">No products in this category.</p>'}</div>`;
  }).join('');
 }
 function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -656,26 +681,77 @@ function refreshProductTables(){
  buildTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
  buildCountTable('cnt-cake',CAKE_PRODUCTS,CAKE_COUNT_DAYS,true);buildCountTable('cnt-bread',BREAD_PRODUCTS,BREAD_COUNT_DAYS,false);buildCountTable('cnt-polv',POLV_PRODUCTS,BREAD_COUNT_DAYS,false);
  buildSoldTable('cake',CAKE_PRODUCTS,CAKE_DAYS,true);buildSoldTable('bread',BREAD_PRODUCTS,BREAD_DAYS,false);buildSoldTable('polv',POLV_PRODUCTS,BREAD_DAYS,false);
+ renderManagedProducts();
 }
 function addManagedProduct(){
  const code=document.getElementById('pm-code').value.trim();const tid=document.getElementById('pm-category').value;
- if(!code){document.getElementById('pm-message').textContent='Enter a product name or code.';return;}
+ const adqName=document.getElementById('pm-adq-map').value.trim();const deliveryName=document.getElementById('pm-del-map').value.trim();
+ const msg=document.getElementById('pm-message');
+ if(!code){msg.textContent='Enter a product name or DIC code.';return;}
  const all=[...CAKE_PRODUCTS,...BREAD_PRODUCTS,...POLV_PRODUCTS].filter(p=>p.code).map(p=>p.code.toLowerCase());
- if(all.includes(code.toLowerCase())){document.getElementById('pm-message').textContent='That product already exists.';return;}
+ if(all.includes(code.toLowerCase())){msg.textContent='That product already exists.';return;}
  if(!managedProducts[tid])managedProducts[tid]=[];managedProducts[tid].push(code);
  if(tid==='cake'){const subtype=document.getElementById('pm-subtype').value;managedProductTypes[code]=subtype;const group=subtype==='REGULAR'?'REGULAR':subtype==='ROLLS'?'ROLLS':subtype==='DEDICATION CAKES'?'DEDICATION CAKES':subtype;let idx=CAKE_PRODUCTS.findIndex(p=>p.group===group);if(idx>=0){idx++;while(idx<CAKE_PRODUCTS.length&&!CAKE_PRODUCTS[idx].group)idx++;CAKE_PRODUCTS.splice(idx,0,{code,cutoff:'-3 days',managed:true,subtype});}else CAKE_PRODUCTS.push({code,cutoff:'-3 days',managed:true,subtype});}
  else if(tid==='bread'){const idx=BREAD_PRODUCTS.findIndex(p=>p.group==='PASTRY PACKS');BREAD_PRODUCTS.splice(idx<0?BREAD_PRODUCTS.length:idx,0,{code,cutoff:'',managed:true});}
  else POLV_PRODUCTS.push({code,cutoff:'-5 days',managed:true});
- counts[tid][code]=counts[tid][code]||{};document.getElementById('pm-code').value='';document.getElementById('pm-message').textContent='Product added.';persistManagedProducts();
- refreshProductTables();renderManagedProducts();autoSaveFirebase(true);
+ if(adqName||deliveryName)productMappings[code]={adq:adqName,delivery:deliveryName};
+ counts[tid][code]=counts[tid][code]||{};
+ ['pm-code','pm-adq-map','pm-del-map'].forEach(id=>document.getElementById(id).value='');msg.textContent='Product added. Saving settings…';
+ persistManagedProducts();refreshProductTables();autoSaveFirebase(true);
 }
-function removeManagedProduct(tid,encoded){
- const code=decodeURIComponent(encoded);if(!confirm(`Remove ${code} from the product list? Existing encoded counts for this product will also be removed from this day's DIC.`))return;
- managedProducts[tid]=(managedProducts[tid]||[]).filter(c=>c!==code);
- const arr=productArray(tid);const i=arr.findIndex(p=>p.code===code&&p.managed);if(i>=0)arr.splice(i,1);
- delete counts[tid][code];delete sold[tid][code];delete managedProductTypes[code];persistManagedProducts();
- refreshProductTables();renderManagedProducts();autoSaveFirebase(true);
+function removeProduct(tid,encoded){
+ const code=decodeURIComponent(encoded);if(!confirm(`Delete ${code} from the ${productCategoryName(tid)} product list? Its encoded counts and sold counts for the current day will also be removed. This product will stay deleted on other dates and devices.`))return;
+ const arr=productArray(tid);const item=arr.find(p=>p.code===code);
+ if(item?.managed){managedProducts[tid]=(managedProducts[tid]||[]).filter(c=>c!==code);}
+ else {if(!disabledProducts[tid])disabledProducts[tid]=[];if(!disabledProducts[tid].includes(code))disabledProducts[tid].push(code);}
+ const i=arr.findIndex(p=>p.code===code);if(i>=0)arr.splice(i,1);
+ delete counts[tid][code];delete sold[tid][code];
+ persistManagedProducts();refreshProductTables();autoSaveFirebase(true);
+ const msg=document.getElementById('pm-message');if(msg)msg.textContent=`${code} deleted and product settings saved.`;
 }
+function editProductMapping(tid,encoded){
+ const code=decodeURIComponent(encoded);const mapping=productMappings[code]||{};
+ document.getElementById('pm-code').value=code;
+ document.getElementById('pm-category').value=tid;
+ toggleCakeSubtype();
+ if(tid==='cake'){
+  const item=productArray(tid).find(p=>p.code===code);
+  document.getElementById('pm-subtype').value=item?.subtype||managedProductTypes[code]||'JUNIOR';
+ }
+ document.getElementById('pm-adq-map').value=mapping.adq||'';
+ document.getElementById('pm-del-map').value=mapping.delivery||'';
+ document.getElementById('pm-message').textContent=`Editing mapping for ${code}. Update the mapping fields and click “Save Mapping for Existing Product”.`;
+ document.getElementById('pm-code').focus();
+}
+function saveProductMapping(){
+ const code=document.getElementById('pm-code').value.trim();
+ const exists=['cake','bread','polv'].some(tid=>productArray(tid).some(p=>p.code&&p.code.toLowerCase()===code.toLowerCase()));
+ const msg=document.getElementById('pm-message');
+ if(!code||!exists){msg.textContent='Enter or load an existing product code first.';return;}
+ const adq=document.getElementById('pm-adq-map').value.trim();
+ const delivery=document.getElementById('pm-del-map').value.trim();
+ if(adq||delivery)productMappings[code]={adq,delivery};else delete productMappings[code];
+ persistManagedProducts();msg.textContent=`Mapping saved for ${code}.`;renderManagedProducts();
+}
+function getADQMappings(){
+ const out=ADQ_MAP.slice();
+ Object.entries(productMappings).forEach(([code,m])=>(m.adq||'').split('|').map(x=>x.trim()).filter(Boolean).forEach(name=>out.push([name,code,1])));
+ return out;
+}
+function getDeliveryMappings(){
+ const out=DEL_MAP.slice();
+ Object.entries(productMappings).forEach(([code,m])=>(m.delivery||'').split('|').map(x=>x.trim()).filter(Boolean).forEach(name=>out.push([name,code])));
+ return out;
+}
+async function loadProductSettings(){
+ if(window.RRFB?.loadProductConfig){
+  try{const remote=await window.RRFB.loadProductConfig();if(remote){managedProducts=remote.products||managedProducts;managedProductTypes=remote.types||managedProductTypes;disabledProducts=remote.disabled||disabledProducts;productMappings=remote.mappings||productMappings;productConfigLoaded=true;persistLocalProductSettings();}}
+  catch(e){console.error('[Firebase] product settings load failed:',e);}
+ }
+ applyProductSettings();
+}
+function persistLocalProductSettings(){try{localStorage.setItem('rr-managed-products',JSON.stringify({products:managedProducts,types:managedProductTypes,disabled:disabledProducts,mappings:productMappings}));}catch(e){}}
+
 function clearTodayDIC(){
  if(!confirm("Clear only today's encoded DIC quantities in Day 1, Day 2, Day 3, Day 4 and LA for all products? Variance, sales, delivery and other dates will remain unchanged."))return;
  ['cake','bread','polv'].forEach(tid=>{Object.keys(counts[tid]||{}).forEach(code=>{const c=counts[tid][code];['d1','d2','d3','d4','la'].forEach(k=>c[k]='');updateRow(tid,code);recalcWithPacks(tid,code);});});
@@ -937,6 +1013,7 @@ function autoSaveFirebase(immediate=false){
 
 async function loadFirebaseData(){
   if(!window.RRFB?.loadDay) return;
+  await loadProductSettings();
   if(window.RRFB.setStatus) window.RRFB.setStatus('☁ Loading...');
   try{
     const data=await window.RRFB.loadDay();
@@ -948,9 +1025,8 @@ async function loadFirebaseData(){
       if(data.count){Object.keys(countCounts).forEach(k=>countCounts[k]=data.count[k]||{});}
       mtdVarData=data.mtdVar||{};
       ydicData=data.ydic||{};
-      if(data.managedProducts) managedProducts=data.managedProducts;
-      if(data.managedProductTypes) managedProductTypes=data.managedProductTypes;
-      applyManagedProducts();persistManagedProducts();
+      if(!productConfigLoaded){if(data.managedProducts) managedProducts=data.managedProducts;if(data.managedProductTypes) managedProductTypes=data.managedProductTypes;}
+      applyProductSettings();persistLocalProductSettings();
       const daily=data.sales?.daily||{}, mtd=data.sales?.mtd||{};
       [['sales',daily.sales],['tc',daily.tc],['waste',daily.waste],['discount',daily.discount],['grab',daily.grab],['fpanda',daily.fpanda],['mtd-tgt',mtd.mtd_tgt],['mtd-ly',mtd.mtd_ly],['mtd',mtd.mtd],['ac',mtd.ac]].forEach(([id,v])=>{
         const el=document.getElementById('s-'+id);
@@ -1053,6 +1129,7 @@ function init(){
   // Render PS table
   renderPSTable();
   renderManagedProducts();
+  toggleCakeSubtype();
   loadFirebaseData();
 }
 
@@ -1777,7 +1854,7 @@ function extractDel(slot){
       .replace(/\u2014/g,'-')
       .replace(/\s+/g,' ');
     let found=null;
-    for(const[kw,code] of DEL_MAP){if(lower.includes(kw.toLowerCase())){found=code;break;}}
+    for(const[kw,code] of getDeliveryMappings()){if(lower.includes(kw.toLowerCase())){found=code;break;}}
     if(found){
       delData[slot][found]=qty;
       matched++;
@@ -1831,7 +1908,7 @@ function calcADQ(){
       .replace(/\s+/g,' ');
     if(ADQ_SKIP.some(s=>lower.includes(s)))return;
     if(parts.length===6&&isNaN(parseInt(parts[1])))return;
-    for(const[kw,code,pack] of ADQ_MAP){
+    for(const[kw,code,pack] of getADQMappings()){
       if(pack===0)continue;
       if(lower.includes(kw.toLowerCase())){
         if(!totals[code])totals[code]=0;
@@ -2434,7 +2511,7 @@ async function loadMTDVar(input){
         .replace(/,/g,' ').replace(/\u00a0/g,' ').replace(/\u2013/g,'-')
         .replace(/\u2014/g,'-').replace(/\s+/g,' ');
       let found = null;
-      for(const [kw, code] of DEL_MAP){
+      for(const [kw, code] of getDeliveryMappings()){
         const nkw = kw.toLowerCase().replace(/,/g,' ').replace(/\s+/g,' ');
         if(lower.includes(nkw)){ found = code; break; }
       }
@@ -2577,7 +2654,7 @@ async function loadYDIC(input){
       if(qty===0) continue;
       const lower=rawName.toLowerCase().replace(/,/g,' ').replace(/\u00a0/g,' ').replace(/\u2013/g,'-').replace(/\u2014/g,'-').replace(/\s+/g,' ');
       let found=null;
-      for(const [kw,code] of DEL_MAP){ const nkw=kw.toLowerCase().replace(/,/g,' ').replace(/\s+/g,' ');if(lower.includes(nkw)){found=code;break;} }
+      for(const [kw,code] of getDeliveryMappings()){ const nkw=kw.toLowerCase().replace(/,/g,' ').replace(/\s+/g,' ');if(lower.includes(nkw)){found=code;break;} }
       if(found){
         if(!ydicData[found]||qty>ydicData[found]) ydicData[found]=qty;
         if(!matched.find(x=>x.code===found)) matched.push({name:rawName,code:found,qty});

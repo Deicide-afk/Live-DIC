@@ -8,6 +8,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Shared product catalogue and report-name mappings, persistent across dates.
+    match /stores/RR7024/config/{configId} {
+      allow read, write: if configId == 'products';
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

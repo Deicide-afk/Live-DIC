@@ -28,6 +28,10 @@ function dayRef(date = new Date()) {
   return doc(db, 'stores', STORE_ID, 'daily', dateKey(date));
 }
 
+function productConfigRef() {
+  return doc(db, 'stores', STORE_ID, 'config', 'products');
+}
+
 function clean(value) {
   if (value === undefined) return null;
   if (value === null) return null;
@@ -100,11 +104,37 @@ async function flushSave() {
   }
 }
 
+async function loadProductConfig() {
+  if (!CONFIGURED || !db) return null;
+  try {
+    const snap = await getDoc(productConfigRef());
+    return snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.error('[Firebase] product settings load failed:', err);
+    throw err;
+  }
+}
+
+async function saveProductConfig(config) {
+  if (!CONFIGURED || !db) throw new Error('Firebase is not configured');
+  try {
+    await setDoc(productConfigRef(), { ...clean(config), updatedAt: serverTimestamp() }, { merge: true });
+    setStatus('✓ Product settings saved');
+    return true;
+  } catch (err) {
+    console.error('[Firebase] product settings save failed:', err);
+    setStatus('⚠ Product settings save failed', false);
+    throw err;
+  }
+}
+
 window.RRFB = {
   dateKey,
   loadDay,
   saveDay,
   flushSave,
+  loadProductConfig,
+  saveProductConfig,
   setStatus
 };
 
