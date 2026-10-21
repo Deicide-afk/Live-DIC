@@ -645,10 +645,28 @@ try{
  const savedProducts=JSON.parse(localStorage.getItem('rr-managed-products')||'null');
  if(savedProducts){managedProducts=savedProducts.products||managedProducts;managedProductTypes=savedProducts.types||{};disabledProducts=savedProducts.disabled||disabledProducts;productMappings=savedProducts.mappings||{};}
 }catch(e){}
-function persistManagedProducts(){
+async function persistManagedProducts(){
  const payload={products:managedProducts,types:managedProductTypes,disabled:disabledProducts,mappings:productMappings};
- try{localStorage.setItem('rr-managed-products',JSON.stringify(payload));}catch(e){}
- if(window.RRFB?.saveProductConfig) window.RRFB.saveProductConfig(payload).catch(err=>console.error('[Firebase] product settings save failed:',err));
+ try{localStorage.setItem('rr-managed-products',JSON.stringify(payload));}catch(e){console.warn('[Products] local cache unavailable:',e);}
+ // Treat Firebase as the shared source of truth across devices. Do not silently
+ // report success when the cloud save fails; the local cache is only a fallback.
+ if(!window.RRFB?.saveProductConfig){
+  const msg=document.getElementById('pm-message');
+  if(msg) msg.textContent='Saved on this device only — Firebase is not ready. Please retry after the sync status appears.';
+  throw new Error('Firebase product settings service is not ready');
+ }
+ try{
+  await window.RRFB.saveProductConfig(payload);
+  productConfigLoaded=true;
+  const msg=document.getElementById('pm-message');
+  if(msg) msg.textContent='Product settings saved to Firebase and shared across devices.';
+  return true;
+ }catch(err){
+  console.error('[Firebase] product settings save failed:',err);
+  const msg=document.getElementById('pm-message');
+  if(msg) msg.textContent='CLOUD SAVE FAILED. Changes are only on this device. Check Firestore rules/connection, then retry.';
+  throw err;
+ }
 }
 function productArray(tid){return tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS;}
 function applyProductSettings(){
@@ -697,7 +715,7 @@ function addManagedProduct(){
  if(adqName||deliveryName)productMappings[code]={adq:adqName,delivery:deliveryName};
  counts[tid][code]=counts[tid][code]||{};
  ['pm-code','pm-adq-map','pm-del-map'].forEach(id=>document.getElementById(id).value='');msg.textContent='Product added. Saving settings…';
- persistManagedProducts();refreshProductTables();autoSaveFirebase(true);
+ persistManagedProducts().catch(err=>console.error('[Products] cloud save failed:',err));refreshProductTables();autoSaveFirebase(true);
 }
 function removeProduct(tid,encoded){
  const code=decodeURIComponent(encoded);if(!confirm(`Delete ${code} from the ${productCategoryName(tid)} product list? Its encoded counts and sold counts for the current day will also be removed. This product will stay deleted on other dates and devices.`))return;
@@ -706,7 +724,7 @@ function removeProduct(tid,encoded){
  else {if(!disabledProducts[tid])disabledProducts[tid]=[];if(!disabledProducts[tid].includes(code))disabledProducts[tid].push(code);}
  const i=arr.findIndex(p=>p.code===code);if(i>=0)arr.splice(i,1);
  delete counts[tid][code];delete sold[tid][code];
- persistManagedProducts();refreshProductTables();autoSaveFirebase(true);
+ persistManagedProducts().catch(err=>console.error('[Products] cloud save failed:',err));refreshProductTables();autoSaveFirebase(true);
  const msg=document.getElementById('pm-message');if(msg)msg.textContent=`${code} deleted and product settings saved.`;
 }
 function editProductMapping(tid,encoded){
@@ -731,7 +749,7 @@ function saveProductMapping(){
  const adq=document.getElementById('pm-adq-map').value.trim();
  const delivery=document.getElementById('pm-del-map').value.trim();
  if(adq||delivery)productMappings[code]={adq,delivery};else delete productMappings[code];
- persistManagedProducts();msg.textContent=`Mapping saved for ${code}.`;renderManagedProducts();
+ persistManagedProducts().then(()=>{msg.textContent=`Mapping saved for ${code} and synced to Firebase.`;}).catch(err=>console.error('[Products] mapping cloud save failed:',err));renderManagedProducts();
 }
 function getADQMappings(){
  const out=ADQ_MAP.slice();
@@ -745,8 +763,36 @@ function getDeliveryMappings(){
 }
 async function loadProductSettings(){
  if(window.RRFB?.loadProductConfig){
-  try{const remote=await window.RRFB.loadProductConfig();if(remote){managedProducts=remote.products||managedProducts;managedProductTypes=remote.types||managedProductTypes;disabledProducts=remote.disabled||disabledProducts;productMappings=remote.mappings||productMappings;productConfigLoaded=true;persistLocalProductSettings();}}
-  catch(e){console.error('[Firebase] product settings load failed:',e);}
+  try{
+   const remote=await window.RRFB.loadProductConfig();
+   // A successful read of an empty config is still authoritative: it means
+   // there are no shared customisations yet, rather than permission to use
+   // stale device-local settings as the shared catalogue.
+   if(remote){
+    managedProducts=remote.products||{cake:[],bread:[],polv:[]};
+    managedProductTypes=remote.types||{};
+    disabledProducts=remote.disabled||{cake:[],bread:[],polv:[]};
+    productMappings=remote.mappings||{};
+   }else{
+    // No shared document exists yet. Keep this device's cached settings so
+    // existing PC changes are not discarded. If it has actual customisations,
+    // migrate them to the shared document; a fresh device with defaults will
+    // not create an empty document that could overwrite another device's data.
+    const hasLocalCustomisations = ['cake','bread','polv'].some(tid =>
+      (managedProducts[tid]||[]).length || (disabledProducts[tid]||[]).length
+    ) || Object.keys(managedProductTypes||{}).length || Object.keys(productMappings||{}).length;
+    if(hasLocalCustomisations){
+      try{await window.RRFB.saveProductConfig({products:managedProducts,types:managedProductTypes,disabled:disabledProducts,mappings:productMappings});}
+      catch(saveErr){console.error('[Firebase] product settings migration failed:',saveErr);}
+    }
+   }
+   productConfigLoaded=true;
+   persistLocalProductSettings();
+  }catch(e){
+   console.error('[Firebase] product settings load failed:',e);
+   const msg=document.getElementById('pm-message');
+   if(msg) msg.textContent='Could not load shared product settings from Firebase. Check your connection and Firestore rules.';
+  }
  }
  applyProductSettings();
 }
