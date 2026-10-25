@@ -603,20 +603,22 @@ const CAKE_PRODUCTS = [
 ];
 
 const BREAD_PRODUCTS = [
-  {group:'PBDs'},
+  {group:'MAMON'},
+  {code:'BM',      cutoff:'-2 days'},{code:'CHM',     cutoff:'-2 days'},
+  {code:'MM',      cutoff:'-2 days'},{code:'UM',      cutoff:'-2 days'},
+  {group:'ENSAIMADA'},
+  {code:'ENS',     cutoff:'-2 days'},{code:'UBENS',   cutoff:'-1 day'},
+  {group:'CAKE SLICES'},
+  {code:'CCS',     cutoff:'-3 days'},{code:'CHCS',    cutoff:'-2 days'},
+  {code:'CPBCS',   cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
+  {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
+  {group:'MOIST'},
   {code:'BCR-S',   cutoff:'-2 days'},{code:'BCRLF',   cutoff:'-2 days'},
-  {code:'BM',      cutoff:'-2 days'},{code:'CHCS',    cutoff:'-2 days'},
-  {code:'CHM',     cutoff:'-2 days'},{code:'CPBCS',   cutoff:'-2 days'},
-  {code:'CRK',     cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
-  {code:'ENS',     cutoff:'-2 days'},{code:'MC-L',    cutoff:'-2 days'},
-  {code:'MC-S',    cutoff:'-2 days'},{code:'MCRN',    cutoff:'-2 days'},
-  {code:'MM',      cutoff:'-2 days'},{code:'MMC SLC', cutoff:'-2 days'},
-  {code:'RVCS',    cutoff:'-2 days'},{code:'SCS',     cutoff:'-2 days'},
+  {code:'MC-S',    cutoff:'-2 days'}{code:'MC-L',    cutoff:'-2 days'},
   {code:'Tai-S',   cutoff:'-2 days'},{code:'TAILF',   cutoff:'-2 days'},
-  {code:'UM',      cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
-  {code:'UBENS',   cutoff:'-1 day'},
-  {group:'CCS / FB'},
-  {code:'CCS',     cutoff:'-3 days'},{code:'FB',      cutoff:'-3 days'},
+  {group:'PASTRY'},
+  {code:'CRK',     cutoff:'-2 days'},{code:'MCRN',    cutoff:'-2 days'},
+  {code:'FB',      cutoff:'-3 days'},
 
   {group:'PASTRY PACKS'},
   {code:'BM 5',   cutoff:'', mult:5,  pack:true, targets:['BM'],  targetMult:[1]},
@@ -627,6 +629,7 @@ const BREAD_PRODUCTS = [
   {code:'CS 8',   cutoff:'', mult:1,  pack:true, targets:['CCS','RVCS','CHCS','DDC SLC','MMC SLC','UMC SLC','CPBCS','SCS'], targetMult:[1,1,1,1,1,1,1,1]},
   {code:'ASMON',  cutoff:'', mult:1,  pack:true, targets:['BM','MM','CHM','UM'], targetMult:[2,1,1,1]},
   {code:'ASTMST',  cutoff:'', mult:1,  pack:true, targets:['Tai-S','MC-S','BCR-S'], targetMult:[2,2,1]},
+  {code:'ASTPBD's',  cutoff:'', mult:1,  pack:true, targets:['BM','ENS','MC-S'], targetMult:[2,2,1]},
 ];
 
 const POLV_PRODUCTS = [
