@@ -626,6 +626,7 @@ const BREAD_PRODUCTS = [
   {code:'CS 5',   cutoff:'', mult:1,  pack:true, targets:['RVCS','CHCS','DDC SLC','MMC SLC','UMC SLC'], targetMult:[1,1,1,1,1]},
   {code:'CS 8',   cutoff:'', mult:1,  pack:true, targets:['CCS','RVCS','CHCS','DDC SLC','MMC SLC','UMC SLC','CPBCS','SCS'], targetMult:[1,1,1,1,1,1,1,1]},
   {code:'ASMON',  cutoff:'', mult:1,  pack:true, targets:['BM','MM','CHM','UM'], targetMult:[2,1,1,1]},
+  {code:'ASTMST',  cutoff:'', mult:1,  pack:true, targets:['Tai-S','MC-S','BCR-S'], targetMult:[2,2,1]},
 ];
 
 const POLV_PRODUCTS = [
@@ -799,9 +800,40 @@ async function loadProductSettings(){
 function persistLocalProductSettings(){try{localStorage.setItem('rr-managed-products',JSON.stringify({products:managedProducts,types:managedProductTypes,disabled:disabledProducts,mappings:productMappings}));}catch(e){}}
 
 function clearTodayDIC(){
- if(!confirm("Clear only today's encoded DIC quantities in Day 1, Day 2, Day 3, Day 4 and LA for all products? Variance, sales, delivery and other dates will remain unchanged."))return;
- ['cake','bread','polv'].forEach(tid=>{Object.keys(counts[tid]||{}).forEach(code=>{const c=counts[tid][code];['d1','d2','d3','d4','la'].forEach(k=>c[k]='');updateRow(tid,code);recalcWithPacks(tid,code);});});
- refreshProductTables();autoSaveFirebase(true);
+ if(!confirm("Clear today's encoded DIC quantities (Day 1, Day 2, Day 3, Day 4 and LA), manual Variance values, and uploaded MTD Var values for all products? Sales, deliveries, product settings, and other dates will remain unchanged."))return;
+ // Clear daily DIC quantities and the manually encoded Variance field.
+ ['cake','bread','polv'].forEach(tid=>{
+  Object.keys(counts[tid]||{}).forEach(code=>{
+   const c=counts[tid][code];
+   ['d1','d2','d3','d4','la'].forEach(k=>c[k]='');
+   delete c.var;
+   updateRow(tid,code);
+   recalcWithPacks(tid,code);
+  });
+ });
+ // Clear imported MTD variance values and refresh every visible DIC MTD Var cell.
+ mtdVarData={};
+ ['cake','bread','polv'].forEach(tid=>{
+  const products=tid==='cake'?CAKE_PRODUCTS:tid==='bread'?BREAD_PRODUCTS:POLV_PRODUCTS;
+  products.filter(p=>p.code).forEach(p=>updateMTDVarCell(p.code));
+ });
+ const result=document.getElementById('mtdvar-result');
+ if(result)result.style.display='none';
+ const tbody=document.getElementById('mtdvar-tbody');
+ if(tbody)tbody.innerHTML='';
+ const summary=document.getElementById('mtdvar-summary');
+ if(summary)summary.textContent='';
+ const unmatched=document.getElementById('mtdvar-unmatched');
+ if(unmatched)unmatched.textContent='';
+ const status=document.getElementById('mtdvar-status');
+ if(status)status.textContent='MTD Var values cleared.';
+ const fname=document.getElementById('mtdvar-fname');
+ if(fname)fname.textContent='No file chosen';
+ const fileInput=document.getElementById('mtdvar-file');
+ if(fileInput)fileInput.value='';
+ refreshProductTables();
+ refreshCountVariances();
+ autoSaveFirebase(true);
 }
 
 
