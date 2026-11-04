@@ -612,7 +612,6 @@ const BREAD_PRODUCTS = [
   {code:'CCS',     cutoff:'-3 days'},{code:'CHCS',    cutoff:'-2 days'},
   {code:'CPBCS',   cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
   {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
-  {code:'RVCS', cutoff:'-2 days'},
   {group:'MOIST'},
   {code:'BCR-S',   cutoff:'-2 days'},{code:'BCRLF',   cutoff:'-2 days'},
   {code:'MC-S',    cutoff:'-2 days'},{code:'MC-L',    cutoff:'-2 days'},
@@ -2163,9 +2162,10 @@ function savePDF(type){
   status.textContent='Generating PDF...';
   try{
     const {jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+    // Letter-size portrait. Save All Tables produces two pages:
+    // page 1 = Cakes + Icing; page 2 = Breads & PBDs + Polvoron.
+    const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});
 
-    // Colors
     const GREEN      =[39,174,96];
     const DARK_GREEN =[21,95,53];
     const LIGHT_GREEN=[240,255,244];
@@ -2175,38 +2175,38 @@ function savePDF(type){
     const MUTED_TEXT =[110,110,110];
     const BORDER     =[185,225,190];
 
-    const PAGE_W=doc.internal.pageSize.getWidth();   // 841.89
-    const PAGE_H=doc.internal.pageSize.getHeight();  // 595.28
+    const PAGE_W=doc.internal.pageSize.getWidth();
+    const PAGE_H=doc.internal.pageSize.getHeight();
     const MARGIN=18;
-    const USABLE_W=PAGE_W-MARGIN*2;                  // ~805 pt
+    const USABLE_W=PAGE_W-MARGIN*2; // 576pt on Letter portrait
     const HEADER_H=30;
     const FOOTER_Y=PAGE_H-8;
-    const TABLE_START=46; // Y position where first table starts
+    const TABLE_START=46;
 
     const dateStr=document.getElementById('today-display').textContent;
 
-    // ── Column widths — must sum to USABLE_W (~806pt) to fill full page
-    // Product,Cut,ADQ,MIN,MAX, D1,D2,D3,D4,LA, VAR,TOTAL, Del,Del,Forecast
+    // Manually allocated column widths for Letter portrait.
+    // Product and daily/delivery entry columns get more usable space;
+    // compact reference/summary columns use less.
+    // Total = 576pt, matching the page width between 18pt margins.
     const COL_W={
-      0:{cellWidth:128,halign:'left',fontStyle:'bold'},
-      1:{cellWidth:35},
-      2:{cellWidth:30},
-      3:{cellWidth:30},
-      4:{cellWidth:30},
-      5:{cellWidth:60},
-      6:{cellWidth:60},
-      7:{cellWidth:60},
-      8:{cellWidth:60},
-      9:{cellWidth:60},
-      10:{cellWidth:27},
-      11:{cellWidth:38},
-      12:{cellWidth:59},
-      13:{cellWidth:59},
-      14:{cellWidth:70},
+      0:{cellWidth:100,halign:'left',fontStyle:'bold'}, // Product
+      1:{cellWidth:22}, // Cut
+      2:{cellWidth:19}, // ADQ
+      3:{cellWidth:19}, // MIN
+      4:{cellWidth:19}, // MAX
+      5:{cellWidth:37}, // Day 1
+      6:{cellWidth:37}, // Day 2
+      7:{cellWidth:37}, // Day 3
+      8:{cellWidth:37}, // Day 4
+      9:{cellWidth:37}, // LA
+      10:{cellWidth:18}, // Variance
+      11:{cellWidth:24}, // Total
+      12:{cellWidth:37}, // Delivery 1
+      13:{cellWidth:37}, // Delivery 2
+      14:{cellWidth:50}, // Forecast
     };
-    // Sum: 128+35+30+30+30+300+27+38+59+59+70 = 806 ✓
 
-    // ── Parse header: extract label + date as two lines ──
     function getHeadRow(tableEl){
       const row=[];
       tableEl.querySelectorAll('thead tr th').forEach(th=>{
@@ -2231,7 +2231,6 @@ function savePDF(type){
       return rows;
     }
 
-    // ── Draw the green top bar ──
     function drawHeader(){
       doc.setFillColor(...GREEN);
       doc.rect(0,0,PAGE_W,HEADER_H,'F');
@@ -2244,7 +2243,6 @@ function savePDF(type){
       doc.text(dateStr,PAGE_W-MARGIN,20,{align:'right'});
     }
 
-    // ── Draw footer line + timestamp ──
     function drawFooter(pageNum){
       doc.setDrawColor(...GREEN);
       doc.setLineWidth(1.2);
@@ -2254,32 +2252,29 @@ function savePDF(type){
       doc.text(`Page ${pageNum}  •  Generated ${new Date().toLocaleString()}`,PAGE_W/2,FOOTER_Y,{align:'center'});
     }
 
-    // ── Render one table block, returns finalY ──
     function renderTable(tableEl,sectionLabel,startY,bodyRows){
-      // Section label above table
       doc.setTextColor(...DARK_GREEN);
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setFont('helvetica','bold');
       doc.text(sectionLabel.replace(/[^\x00-\x7F]/g,'').trim(),MARGIN,startY);
 
       const headRow=getHeadRow(tableEl);
-      let pageCount=0;
-
       doc.autoTable({
-        startY:startY+7,
+        startY:startY+6,
         margin:{left:MARGIN,right:MARGIN,top:TABLE_START,bottom:20},
-        tableWidth:'wrap',
+        tableWidth:USABLE_W,
         head:[headRow],
         body:bodyRows.map(r=>r.cells),
         styles:{
           fontSize:6,
-          cellPadding:{top:1.5,right:1.5,bottom:1.5,left:1.5},
+          cellPadding:{top:1.5,right:0.8,bottom:1.5,left:0.8},
           lineColor:BORDER,
-          lineWidth:0.3,
+          lineWidth:0.25,
           textColor:DARK_TEXT,
           font:'helvetica',
           overflow:'ellipsize',
           halign:'center',
+          minCellHeight:10,
         },
         headStyles:{
           fillColor:GREEN,
@@ -2287,11 +2282,11 @@ function savePDF(type){
           fontStyle:'bold',
           fontSize:6,
           halign:'center',
-          cellPadding:{top:2,right:1.5,bottom:2,left:1.5},
+          cellPadding:{top:2,right:0.8,bottom:2,left:0.8},
         },
         columnStyles:COL_W,
         alternateRowStyles:{fillColor:LIGHT_GREEN},
-        rowPageBreak:'auto',
+        rowPageBreak:'avoid',
         didParseCell:(data)=>{
           const row=bodyRows[data.row.index];
           if(row&&row.isGroup){
@@ -2303,18 +2298,13 @@ function savePDF(type){
           }
         },
         didDrawPage:(data)=>{
-          pageCount++;
-          // On overflow pages redraw header bar
-          if(data.pageNumber>1){
-            drawHeader();
-          }
+          if(data.pageNumber>1)drawHeader();
           drawFooter(doc.internal.getNumberOfPages());
         },
       });
       return doc.lastAutoTable.finalY;
     }
 
-    // ── Page groups: cakes=1 page, breads+polv=1 page ──
     const pageGroups=type==='cakes'
       ?[[{label:'CAKES + ICING',id:'cake-table'}]]
       :type==='breads'
@@ -2325,16 +2315,15 @@ function savePDF(type){
         ];
 
     pageGroups.forEach((group,pageIdx)=>{
-      if(pageIdx>0)doc.addPage();
+      if(pageIdx>0)doc.addPage('letter','portrait');
       drawHeader();
-
       let currentY=TABLE_START;
       group.forEach(({label,id},tIdx)=>{
         const tableEl=document.getElementById(id);
         if(!tableEl){status.textContent='Error: open DIC tab first.';return;}
-        if(tIdx>0)currentY+=8; // small gap between tables on same page
+        if(tIdx>0)currentY+=6;
         const bodyRows=getBodyRows(tableEl);
-        currentY=renderTable(tableEl,label,currentY,bodyRows)+4;
+        currentY=renderTable(tableEl,label,currentY,bodyRows)+3;
       });
     });
 
