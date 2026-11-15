@@ -2,15 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This is a simple store-counting tool, not a private data system.
-    // Only the RR7024 daily records are exposed by this rule.
+    // Existing RR7024 daily dashboard records.
     match /stores/RR7024/daily/{dayId} {
       allow read, write: if true;
     }
 
-    // Shared product catalogue and report-name mappings, persistent across dates.
-    match /stores/RR7024/config/{configId} {
-      allow read, write: if configId == 'products';
+    // One shared, active weekly schedule for the RR7024 dashboard.
+    match /stores/RR7024/weeklySchedule/{scheduleId} {
+      allow read, write: if true;
     }
 
     match /{document=**} {

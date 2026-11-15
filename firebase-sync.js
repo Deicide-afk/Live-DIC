@@ -23,18 +23,14 @@ function dateKey(date = new Date()) {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
-
 function dayRef(date = new Date()) {
   return doc(db, 'stores', STORE_ID, 'daily', dateKey(date));
 }
-
-function productConfigRef() {
-  return doc(db, 'stores', STORE_ID, 'config', 'products');
+function weeklyScheduleRef() {
+  return doc(db, 'stores', STORE_ID, 'weeklySchedule', 'current');
 }
-
 function clean(value) {
-  if (value === undefined) return null;
-  if (value === null) return null;
+  if (value === undefined || value === null) return null;
   if (typeof value === 'number' && !Number.isFinite(value)) return null;
   if (Array.isArray(value)) return value.map(clean);
   if (typeof value === 'object') {
@@ -44,98 +40,53 @@ function clean(value) {
   }
   return value;
 }
-
 function setStatus(text, ok = true) {
   const el = document.getElementById('firebase-save-status');
   if (!el) return;
   el.textContent = text;
   el.style.color = ok ? '#4ade80' : '#f87171';
 }
-
 async function loadDay() {
-  if (!CONFIGURED || !db) {
-    setStatus('⚠ Firebase config needed', false);
-    return null;
-  }
+  if (!CONFIGURED || !db) { setStatus('⚠ Firebase config needed', false); return null; }
   try {
     const snap = await getDoc(dayRef());
-    if (!snap.exists()) {
-      setStatus('☁ Firebase ready — new day');
-      return null;
-    }
+    if (!snap.exists()) { setStatus('☁ Firebase ready — new day'); return null; }
     setStatus('☁ Loaded from Firebase');
     return snap.data();
-  } catch (err) {
-    console.error('[Firebase] load failed:', err);
-    setStatus('⚠ Firebase load failed', false);
-    throw err;
-  }
+  } catch (err) { console.error('[Firebase] load failed:', err); setStatus('⚠ Firebase load failed', false); throw err; }
 }
-
 let saveTimer = null;
 let pendingState = null;
-
 async function saveDay(state, immediate = false) {
   if (!CONFIGURED || !db) return;
   pendingState = clean(state);
-  if (!immediate) {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => flushSave(), 350);
-    return;
-  }
+  if (!immediate) { clearTimeout(saveTimer); saveTimer = setTimeout(() => flushSave(), 350); return; }
   await flushSave();
 }
-
 async function flushSave() {
   if (!pendingState) return;
-  const state = pendingState;
-  pendingState = null;
-  setStatus('☁ Saving...');
+  const state = pendingState; pendingState = null; setStatus('☁ Saving...');
   try {
-    await setDoc(dayRef(), {
-      ...state,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    await setDoc(dayRef(), { ...state, updatedAt: serverTimestamp() }, { merge: true });
     setStatus('✓ Saved to Firebase');
-  } catch (err) {
-    console.error('[Firebase] save failed:', err);
-    pendingState = state;
-    setStatus('⚠ Save failed — check connection', false);
-  }
+  } catch (err) { console.error('[Firebase] save failed:', err); pendingState = state; setStatus('⚠ Save failed — check connection', false); }
 }
-
-async function loadProductConfig() {
-  if (!CONFIGURED || !db) return null;
+async function loadWeeklySchedule() {
+  if (!CONFIGURED || !db) { setStatus('⚠ Firebase config needed', false); return null; }
+  const snap = await getDoc(weeklyScheduleRef());
+  if (!snap.exists()) return null;
+  return snap.data();
+}
+async function saveWeeklySchedule(schedule) {
+  if (!CONFIGURED || !db) { setStatus('⚠ Firebase config needed', false); return; }
   try {
-    const snap = await getDoc(productConfigRef());
-    return snap.exists() ? snap.data() : null;
+    await setDoc(weeklyScheduleRef(), { weeklySchedule: clean(schedule), updatedAt: serverTimestamp() }, { merge: true });
+    setStatus('✓ Schedule saved to Firebase');
   } catch (err) {
-    console.error('[Firebase] product settings load failed:', err);
+    console.error('[Firebase] weekly schedule save failed:', err);
+    setStatus('⚠ Schedule save failed — check connection', false);
     throw err;
   }
 }
-
-async function saveProductConfig(config) {
-  if (!CONFIGURED || !db) throw new Error('Firebase is not configured');
-  try {
-    await setDoc(productConfigRef(), { ...clean(config), updatedAt: serverTimestamp() }, { merge: true });
-    setStatus('✓ Product settings saved');
-    return true;
-  } catch (err) {
-    console.error('[Firebase] product settings save failed:', err);
-    setStatus('⚠ Product settings save failed', false);
-    throw err;
-  }
-}
-
-window.RRFB = {
-  dateKey,
-  loadDay,
-  saveDay,
-  flushSave,
-  loadProductConfig,
-  saveProductConfig,
-  setStatus
-};
-
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, setStatus };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));

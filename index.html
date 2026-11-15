@@ -169,6 +169,49 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .sales-note{font-size:.68rem;color:var(--muted);margin-top:6px;text-align:center;}
 .btn-screenshot{width:100%;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;text-align:left;transition:background .2s;}
 .btn-screenshot:hover{background:var(--accent);border-color:var(--accent);}
+
+/* ── WEEKLY SCHEDULE ─────────────────────────────────────── */
+.schedule-wrap{padding:16px;max-width:1500px;margin:0 auto;color:var(--text)}
+.schedule-toolbar,.schedule-subtabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.schedule-toolbar label{font-size:.78rem;color:var(--muted);font-weight:600}
+.schedule-toolbar input,.schedule-toolbar select,.sched-cell,.sched-employee-input,.sched-rd-input,.request-form input,.request-form select,.request-form textarea{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;font:inherit}
+.schedule-toolbar button,.schedule-subtabs button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:600}
+.schedule-subtabs button.active{background:var(--accent);color:white;border-color:var(--accent)}
+.schedule-table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:8px}
+.schedule-table{border-collapse:collapse;width:100%;min-width:930px;background:var(--surface);font-size:.78rem}
+.schedule-table th,.schedule-table td{border:1px solid var(--border);padding:5px;text-align:center}
+.schedule-table th{background:var(--card);font-weight:700}
+.schedule-table .name-cell{text-align:left;min-width:150px;font-weight:700}
+.sched-cell{width:100%;min-width:112px;padding:6px 3px;font-size:.72rem;text-align:center}
+.sched-employee-input{width:115px}.sched-rd-input{width:100px;font-size:.72rem}
+.schedule-break{font-weight:700;background:var(--card)}
+.schedule-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:12px 0;font-size:.72rem}
+.schedule-legend span{white-space:nowrap}
+.schedule-signatures{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:22px;font-size:.75rem}
+.schedule-signatures div{padding-top:20px}.schedule-signatures b{display:block;margin-bottom:4px}
+.schedule-note{font-size:.68rem;margin-top:12px;font-weight:600}
+.request-form{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;align-items:end;margin:12px 0}
+.request-form label{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted)}
+.request-form textarea{min-height:36px;resize:vertical}.request-table{width:100%;border-collapse:collapse;font-size:.78rem}.request-table th,.request-table td{border:1px solid var(--border);padding:8px;text-align:left}
+.request-table th{background:var(--card)}
+.sched-rest{background:#d9ead3!important;color:#274e13!important}.sched-leave{background:#fce5cd!important;color:#783f04!important}.sched-absent{background:#f4cccc!important;color:#990000!important}.sched-mbyn{background:#fff2cc!important;color:#7f6000!important}.sched-rbn{background:#d9d2e9!important;color:#351c75!important}.sched-meeting{background:#cfe2f3!important;color:#073763!important}.sched-borrowed{background:#ead1dc!important;color:#741b47!important}.sched-holiday{background:#f4cccc!important;color:#990000!important}
+@media print{
+ @page{size:letter landscape;margin:0.35in}
+ body{background:white!important;color:#000!important}
+ body *{visibility:hidden!important}
+ #tab-weekly,#tab-weekly *{visibility:visible!important}
+ #tab-weekly{position:absolute!important;left:0!important;top:0!important;width:100%!important;display:block!important;padding:0!important}
+ #tab-weekly .schedule-toolbar,#tab-weekly .schedule-subtabs,#tab-weekly .no-print{display:none!important}
+ #weekly-schedule-panel{display:block!important}
+ #weekly-requests-panel{display:none!important}
+ .schedule-wrap{padding:0!important;max-width:none!important}
+ .schedule-table{font-size:8pt!important;min-width:0!important}
+ .schedule-table th,.schedule-table td{padding:3px!important}
+ .sched-cell{border:0!important;background:transparent!important;color:#000!important;font-size:7.5pt!important;appearance:none!important;padding:1px!important}
+ .schedule-table-scroll{overflow:visible!important;border:0!important}
+ .schedule-signatures{font-size:8pt!important;margin-top:12px!important}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -200,6 +243,7 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     <button class="tab-btn active" id="main-btn-dic" onclick="switchMain('dic')">DIC</button>
     <button class="tab-btn" id="main-btn-sales" onclick="switchMain('sales')">Sales</button>
     <button class="tab-btn" id="main-btn-print" onclick="switchMain('print')">Print</button>
+    <button class="tab-btn" id="main-btn-weekly" onclick="switchMain('weekly')">Weekly Schedule</button>
   </div>
   <!-- DIC sub-tabs -->
   <div class="sub-tabs" id="sub-dic">
@@ -493,6 +537,48 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
+
+  <!-- WEEKLY SCHEDULE -->
+  <div id="tab-weekly" class="tab-content">
+    <div class="schedule-wrap">
+      <div class="schedule-subtabs no-print">
+        <button id="weekly-sub-schedule" class="active" onclick="switchWeeklySub('schedule')">Schedule</button>
+        <button id="weekly-sub-requests" onclick="switchWeeklySub('requests')">Request Sched</button>
+      </div>
+      <section id="weekly-schedule-panel">
+        <div class="schedule-toolbar no-print">
+          <label>Week starting (Monday) <input type="date" id="weekly-start-date"></label>
+          <button onclick="setScheduleWeek()">Set Dates</button>
+          <label>Preset <select id="weekly-preset"><option value="1">Schedule 1</option><option value="2">Schedule 2</option></select></label>
+          <button onclick="applySchedulePreset()">Auto-fill</button>
+          <button onclick="clearWeeklySchedule()">Clear Schedule</button>
+          <button onclick="addScheduleEmployee()">+ Add Employee</button>
+          <button onclick="printWeeklySchedule()">Print Schedule</button>
+        </div>
+        <div style="font-weight:800;text-align:center;margin:4px 0 10px">WMPL STORE CREW TEAM SCHEDULE <span id="weekly-range"></span></div>
+        <div class="schedule-table-scroll"><table class="schedule-table" id="weekly-table"></table></div>
+        <div class="schedule-legend">
+          <span><b>RD</b> — REST DAY</span><span><b>SL</b> — SICK LEAVE</span><span><b>VL</b> — VACATION LEAVE</span><span><b>PL</b> — PATERNITY LEAVE</span><span><b>ML</b> — MATERNITY LEAVE</span>
+        </div>
+        <div class="schedule-signatures">
+          <div><b>PREPARED BY:</b><br><strong>MARY JANE F. HUSAYAN</strong><br>ON-SITE SUPERVISOR<br>WALTERMART PLARIDEL</div>
+          <div><b>NOTED BY:</b><br><strong>CHARLES ARTHUR C. SALAMAT</strong><br>Assistant Restaurant Manager<br>WALTERMART PLARIDEL</div>
+        </div>
+        <div class="schedule-note">REQUEST RD MAY OR MAY NOT BE GRANTED. SCHED IS NOT FINAL UNLESS PRINTED. THANKS</div>
+      </section>
+      <section id="weekly-requests-panel" style="display:none">
+        <h3>Request Sched</h3>
+        <div class="request-form no-print">
+          <label>Employee <select id="request-employee"></select></label>
+          <label>Date <input type="date" id="request-date"></label>
+          <label>Request <select id="request-type"><option>RD</option><option>SL</option><option>VL</option><option>PL</option><option>ML</option><option>Shift Change</option><option>Other</option></select></label>
+          <label>Reason <input id="request-reason" placeholder="Reason (optional)"></label>
+          <button onclick="addScheduleRequest()">Add Request</button>
+        </div>
+        <div class="schedule-table-scroll"><table class="request-table"><thead><tr><th>Employee</th><th>Date</th><th>Request</th><th>Reason</th><th class="no-print">Action</th></tr></thead><tbody id="weekly-requests-body"></tbody></table></div>
+      </section>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -518,6 +604,9 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 </div>
+
+
+
 
 <script>
 // ── DATE HELPERS ──────────────────────────────────────────────
@@ -1159,7 +1248,7 @@ document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='E
 // ── TAB SWITCH ───────────────────────────────────────────────
 const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic'];
 function switchMain(main){
-  ['dic','sales','print'].forEach(m=>{
+  ['dic','sales','print','weekly'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
   });
   // show/hide sub-tab bar
@@ -1172,7 +1261,8 @@ function switchMain(main){
     switchTab(tab);
   } else {
     subBar.style.display='none';
-    switchTab(main);
+    if(main==='weekly'){ document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.getElementById('tab-weekly').classList.add('active'); renderWeeklySchedule(); }
+    else switchTab(main);
   }
 }
 function switchTab(name){
@@ -2753,6 +2843,53 @@ async function loadYDIC(input){
 }
 
 function applyYDIC(){ renderYDICTable(); }
+
+// ── WEEKLY SCHEDULE (separate Firestore document) ──────────
+const WEEKLY_SHIFT_OPTIONS = [
+ '','7AM-4PM','8AM-5PM','10AM-7PM','12PM-9PM','12:30PM-9:30PM','11AM-9PM','11:30AM-9:30PM','7AM-5PM','7AM-9PM','7:00AM-9PM','7:00AM-9:30PM',
+ 'RESTDAY','RD','VL','SL','EL','PL','ML','ML/VL/SL','NO SCHED','ABSENT','MBYN','MBYN Open','MBYN Close','RBN','RBN Open','RBN Close','Borrowed Open','Borrowed Close','Meeting','HOLIDAY'
+];
+const WEEKLY_DEFAULT_EMPLOYEES = [
+ {name:'CHARLES',rd:['Monday','Tuesday']},{name:'JERRYME',rd:[]},{name:'RESHELL',rd:['Tuesday']},{name:'ROSE',rd:['Thursday']},{name:'MARY JANE',rd:['Wednesday']},{name:'JESS',rd:['Monday']}
+];
+let weeklySchedule = {weekStart:'',employees:WEEKLY_DEFAULT_EMPLOYEES.map(x=>({...x,rd:[...x.rd]})),cells:{},breaks:Array(7).fill('15/60/15   15/60/15'),requests:[]};
+let weeklyLoaded=false, weeklySaveTimer=null;
+function weeklyDateISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function weeklyMonday(date){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d;}
+function weeklyDays(){const start=weeklyMonday(weeklySchedule.weekStart||weeklyDateISO(new Date()));return Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d;});}
+function weeklyCellKey(emp,day){return `${emp}__${day}`;}
+function weeklyClass(v){v=(v||'').toUpperCase();if(v==='RESTDAY'||v==='RD')return 'sched-rest';if(['VL','SL','EL','PL','ML','ML/VL/SL'].includes(v))return 'sched-leave';if(v==='ABSENT')return 'sched-absent';if(v.includes('MBYN'))return 'sched-mbyn';if(v.includes('RBN'))return 'sched-rbn';if(v==='MEETING')return 'sched-meeting';if(v.includes('BORROWED'))return 'sched-borrowed';if(v==='HOLIDAY')return 'sched-holiday';return '';}
+function renderWeeklySchedule(){
+ const days=weeklyDays(), table=document.getElementById('weekly-table'); if(!table)return;
+ document.getElementById('weekly-start-date').value=weeklyDateISO(days[0]);
+ document.getElementById('weekly-range').textContent=` — ${days[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})}–${days[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+ const headers=days.map((d,i)=>`<th>${d.getDate()}<br>${['MON','TUES','WED','THURS','FRI','SAT','SUN'][i]}</th>`).join('');
+ let html=`<thead><tr><th>NAME</th>${headers}</tr></thead><tbody>`;
+ weeklySchedule.employees.forEach((e,ei)=>{html+=`<tr><td class="name-cell"><input class="sched-employee-input" value="${escSched(e.name)}" onchange="editScheduleEmployee(${ei},'name',this.value)"><br><select class="sched-rd-input" multiple title="Default rest days" onchange="editScheduleEmployee(${ei},'rd',Array.from(this.selectedOptions).map(o=>o.value))">${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d=>`<option value="${d}" ${(e.rd||[]).includes(d)?'selected':''}>RD: ${d.slice(0,3)}</option>`).join('')}</select><button class="no-print" style="font-size:10px" onclick="removeScheduleEmployee(${ei})">Remove</button></td>`;
+ days.forEach((d,di)=>{const key=weeklyCellKey(ei,weeklyDateISO(d)),v=weeklySchedule.cells[key]||'';html+=`<td><select class="sched-cell ${weeklyClass(v)}" onchange="setWeeklyCell('${key}',this.value)">${WEEKLY_SHIFT_OPTIONS.map(o=>`<option value="${escSched(o)}" ${o===v?'selected':''}>${o||'—'}</option>`).join('')}</select></td>`;});html+='</tr>';});
+ html+=`<tr class="schedule-break"><td class="name-cell">BREAK TIME</td>${days.map((d,i)=>`<td><input class="sched-cell" value="${escSched(weeklySchedule.breaks[i]||'15/60/15   15/60/15')}" onchange="setWeeklyBreak(${i},this.value)"></td>`).join('')}</tr></tbody>`;
+ table.innerHTML=html;
+ const sel=document.getElementById('request-employee');if(sel){const old=sel.value;sel.innerHTML=weeklySchedule.employees.map(e=>`<option>${escSched(e.name)}</option>`).join('');if(old)sel.value=old;}
+ renderScheduleRequests();
+}
+function escSched(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function weeklyChanged(){if(!weeklyLoaded)return;clearTimeout(weeklySaveTimer);weeklySaveTimer=setTimeout(async()=>{try{if(window.RRFB?.saveWeeklySchedule)await window.RRFB.saveWeeklySchedule(weeklySchedule);}catch(e){console.error('[Weekly Schedule] save failed',e);}},400);}
+function setWeeklyCell(key,value){weeklySchedule.cells[key]=value;weeklyChanged();renderWeeklySchedule();}
+function setWeeklyBreak(i,value){weeklySchedule.breaks[i]=value;weeklyChanged();}
+function editScheduleEmployee(i,field,value){weeklySchedule.employees[i][field]=value;weeklyChanged();renderWeeklySchedule();}
+function addScheduleEmployee(){weeklySchedule.employees.push({name:'NEW EMPLOYEE',rd:[]});weeklyChanged();renderWeeklySchedule();}
+function removeScheduleEmployee(i){if(!confirm('Remove this employee from the weekly schedule?'))return;weeklySchedule.employees.splice(i,1);const remapped={};Object.entries(weeklySchedule.cells).forEach(([k,v])=>{const cut=k.indexOf('__'),idx=Number(k.slice(0,cut)),day=k.slice(cut+2);if(idx<i)remapped[k]=v;else if(idx>i)remapped[`${idx-1}__${day}`]=v;});weeklySchedule.cells=remapped;weeklyChanged();renderWeeklySchedule();}
+function setScheduleWeek(){const d=weeklyMonday(document.getElementById('weekly-start-date').value||weeklyDateISO(new Date()));weeklySchedule.weekStart=weeklyDateISO(d);weeklyChanged();renderWeeklySchedule();}
+function applySchedulePreset(){const days=weeklyDays(),preset=document.getElementById('weekly-preset').value;const shifts=preset==='1'?['11:30AM-9:30PM','7AM-5PM','7AM-4PM','12:30PM-9:30PM','7AM-4PM','12:30PM-9:30PM']:['11:30AM-9:30PM','7AM-5PM','12:30PM-9:30PM','7AM-4PM','12:30PM-9:30PM','7AM-4PM'];weeklySchedule.employees.forEach((e,ei)=>days.forEach((d,di)=>{let v=shifts[ei]||'7AM-4PM';if((e.rd||[]).includes(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][di]))v='RESTDAY';weeklySchedule.cells[weeklyCellKey(ei,weeklyDateISO(d))]=v;}));weeklyChanged();renderWeeklySchedule();}
+function clearWeeklySchedule(){if(!confirm('Clear all shift entries for this week? Employee names and default rest days will remain.'))return;weeklySchedule.cells={};weeklyChanged();renderWeeklySchedule();}
+function switchWeeklySub(which){document.getElementById('weekly-schedule-panel').style.display=which==='schedule'?'block':'none';document.getElementById('weekly-requests-panel').style.display=which==='requests'?'block':'none';document.getElementById('weekly-sub-schedule').classList.toggle('active',which==='schedule');document.getElementById('weekly-sub-requests').classList.toggle('active',which==='requests');}
+function addScheduleRequest(){const employee=document.getElementById('request-employee').value,date=document.getElementById('request-date').value,type=document.getElementById('request-type').value,reason=document.getElementById('request-reason').value.trim();if(!employee||!date){alert('Please select an employee and date.');return;}weeklySchedule.requests.push({employee,date,type,reason});document.getElementById('request-reason').value='';weeklyChanged();renderScheduleRequests();}
+function removeScheduleRequest(i){weeklySchedule.requests.splice(i,1);weeklyChanged();renderScheduleRequests();}
+function renderScheduleRequests(){const body=document.getElementById('weekly-requests-body');if(!body)return;body.innerHTML=weeklySchedule.requests.map((r,i)=>`<tr><td>${escSched(r.employee)}</td><td>${escSched(r.date)}</td><td>${escSched(r.type)}</td><td>${escSched(r.reason)}</td><td class="no-print"><button onclick="removeScheduleRequest(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="5">No schedule requests yet.</td></tr>';}
+function printWeeklySchedule(){switchWeeklySub('schedule');window.print();}
+async function loadWeeklySchedule(){try{const data=await window.RRFB?.loadWeeklySchedule?.();if(data&&data.weeklySchedule){weeklySchedule={...weeklySchedule,...data.weeklySchedule};if(!Array.isArray(weeklySchedule.employees))weeklySchedule.employees=WEEKLY_DEFAULT_EMPLOYEES.map(x=>({...x,rd:[...x.rd]}));if(!Array.isArray(weeklySchedule.breaks))weeklySchedule.breaks=Array(7).fill('15/60/15   15/60/15');if(!Array.isArray(weeklySchedule.requests))weeklySchedule.requests=[];}else if(!weeklySchedule.weekStart){weeklySchedule.weekStart=weeklyDateISO(weeklyMonday(new Date()));}}catch(e){console.error('[Weekly Schedule] load failed',e);}weeklyLoaded=true;renderWeeklySchedule();}
+window.addEventListener('rr-firebase-ready',()=>{loadWeeklySchedule();});
+
 </script>
 <script type="module">
   import './firebase-sync.js';
