@@ -612,7 +612,6 @@ const BREAD_PRODUCTS = [
   {code:'CCS',     cutoff:'-3 days'},{code:'CHCS',    cutoff:'-2 days'},
   {code:'CPBCS',   cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
   {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
-  {code:'RVCS', cutoff:'-2 days'},
   {group:'MOIST'},
   {code:'BCR-S',   cutoff:'-2 days'},{code:'BCRLF',   cutoff:'-2 days'},
   {code:'MC-S',    cutoff:'-2 days'},{code:'MC-L',    cutoff:'-2 days'},
@@ -2191,7 +2190,7 @@ function savePDF(type){
     // compact reference/summary columns use less.
     // Total = 576pt, matching the page width between 18pt margins.
     const COL_W={
-      0:{cellWidth:100,halign:'left',fontStyle:'bold'}, // Product
+      0:{cellWidth:146,halign:'left',fontStyle:'bold'}, // Product
       1:{cellWidth:22}, // Cut
       2:{cellWidth:19}, // ADQ
       3:{cellWidth:19}, // MIN
@@ -2268,14 +2267,14 @@ function savePDF(type){
         body:bodyRows.map(r=>r.cells),
         styles:{
           fontSize:6,
-          cellPadding:{top:1.5,right:0.8,bottom:1.5,left:0.8},
+          cellPadding:{top:2.5,right:0.8,bottom:2.5,left:0.8},
           lineColor:BORDER,
           lineWidth:0.25,
           textColor:DARK_TEXT,
           font:'helvetica',
           overflow:'ellipsize',
           halign:'center',
-          minCellHeight:10,
+          minCellHeight:13,
         },
         headStyles:{
           fillColor:GREEN,
