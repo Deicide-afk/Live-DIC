@@ -254,6 +254,8 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .daily-checker-table td input:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
 .daily-checker-table td input[type=text]{text-align:left;padding-left:5px}
 .daily-checker-table td input:disabled{cursor:not-allowed}
+.daily-checker-number-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:25px;padding:3px 2px;border:0;background:transparent;color:var(--text);font:inherit;text-align:center;cursor:pointer;box-sizing:border-box}
+.daily-checker-number-cell:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
 @media(max-width:700px){.daily-checker-wrap{padding:8px}.daily-checker-toolbar{gap:7px}.daily-checker-toolbar #daily-checker-status{flex-basis:100%}}
 
 </style>
@@ -709,6 +711,30 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 
 
 
+
+<!-- DAILY CHECKER NUMERIC KEYPAD — separate from the existing DIC modal -->
+<div class="modal-overlay" id="daily-checker-modal" onclick="closeDailyCheckerModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-product" id="daily-checker-modal-title">Daily Checker</div>
+    <div class="modal-cutoff" id="daily-checker-modal-subtitle"></div>
+    <div class="day-input-row" style="grid-template-columns:1fr">
+      <div class="day-input-block" style="background:var(--bg);border:1px solid var(--border)">
+        <div class="day-input-label neutral">NUMERIC VALUE</div>
+        <div class="day-input-field" id="daily-checker-modal-value" style="font-size:1.35rem">0</div>
+      </div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="dailyCheckerKp('1')">1</div><div class="key" onclick="dailyCheckerKp('2')">2</div><div class="key" onclick="dailyCheckerKp('3')">3</div>
+      <div class="key" onclick="dailyCheckerKp('4')">4</div><div class="key" onclick="dailyCheckerKp('5')">5</div><div class="key" onclick="dailyCheckerKp('6')">6</div>
+      <div class="key" onclick="dailyCheckerKp('7')">7</div><div class="key" onclick="dailyCheckerKp('8')">8</div><div class="key" onclick="dailyCheckerKp('9')">9</div>
+      <div class="key clr" onclick="dailyCheckerKp('clr')">CLR</div><div class="key" onclick="dailyCheckerKp('0')">0</div><div class="key del" onclick="dailyCheckerKp('del')">⌫</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDailyCheckerModal()">Cancel</button>
+      <button class="btn-save" onclick="saveDailyCheckerModal()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── DATE HELPERS ──────────────────────────────────────────────
@@ -1384,14 +1410,60 @@ function renderDailyCheckerTable(){
     for(const field of DAILY_CHECKER_FIELDS){
       const value=dailyCheckerEscape(entry[field]??'');
       const isNumeric=DAILY_CHECKER_NUMERIC_FIELDS.has(field);
-      const type=isNumeric?'number':'text';
-      const attrs=isNumeric?'inputmode="decimal" min="0" step="any"':'autocomplete="off"';
-      html+=`<td><input type="${type}" ${attrs} value="${value}" data-day="${day}" data-field="${field}" aria-label="Day ${day} ${field}" oninput="dailyCheckerInput(this)" ${invalid?'disabled':''}></td>`;
+      if(isNumeric){
+        html+=`<td><button type="button" class="daily-checker-number-cell" data-day="${day}" data-field="${field}" aria-label="Enter ${field} for day ${day}" onclick="openDailyCheckerModal(${day},'${field}')" ${invalid?'disabled':''}>${value}</button></td>`;
+      }else{
+        html+=`<td><input type="text" autocomplete="off" value="${value}" data-day="${day}" data-field="${field}" aria-label="Day ${day} ${field}" oninput="dailyCheckerInput(this)" ${invalid?'disabled':''}></td>`;
+      }
     }
     html+='</tr>';
   }
   body.innerHTML=html;
 }
+let dailyCheckerModalState = null;
+function openDailyCheckerModal(day,field){
+  const current=String(dailyCheckerEntries[String(day)]?.[field]??'');
+  dailyCheckerModalState={day:String(day),field,value:current};
+  const labels={grabPos:'Grab POS Sales',grabTerminal:'Grab Terminal Sales',foodPandaPos:'Food Panda POS Sales',foodPandaTerminal:'Food Panda Terminal Sales',tiktokPos:'TikTok POS Sales',tiktokTerminal:'TikTok Terminal Sales',mayaPos:'Maya POS Sales',mayaTerminal:'Maya Terminal Sales'};
+  document.getElementById('daily-checker-modal-title').textContent=labels[field]||'Daily Checker';
+  document.getElementById('daily-checker-modal-subtitle').textContent=`Day ${day} · ${dailyCheckerMonth}`;
+  dailyCheckerUpdateModalValue();
+  document.getElementById('daily-checker-modal').classList.add('open');
+}
+function dailyCheckerUpdateModalValue(){
+  const el=document.getElementById('daily-checker-modal-value');
+  if(el)el.textContent=dailyCheckerModalState?.value||'0';
+}
+function dailyCheckerKp(key){
+  if(!dailyCheckerModalState)return;
+  let value=String(dailyCheckerModalState.value||'');
+  if(key==='clr')value='';
+  else if(key==='del')value=value.slice(0,-1);
+  else value+=key;
+  dailyCheckerModalState.value=value;
+  dailyCheckerUpdateModalValue();
+}
+function saveDailyCheckerModal(){
+  if(!dailyCheckerModalState)return;
+  const {day,field,value}=dailyCheckerModalState;
+  if(!dailyCheckerEntries[day])dailyCheckerEntries[day]={};
+  dailyCheckerEntries[day][field]=value;
+  const cell=document.querySelector(`.daily-checker-number-cell[data-day="${day}"][data-field="${field}"]`);
+  if(cell)cell.textContent=value;
+  if(window.RRFB?.saveDailyChecker){
+    window.RRFB.saveDailyChecker(dailyCheckerMonth,dailyCheckerEntries);
+    dailyCheckerSetStatus('Saving changes...');
+  }else dailyCheckerSetStatus('Firebase is not ready yet; your entry is not saved to the cloud.',true);
+  closeDailyCheckerModal();
+}
+function closeDailyCheckerModal(){
+  document.getElementById('daily-checker-modal')?.classList.remove('open');
+  dailyCheckerModalState=null;
+}
+function closeDailyCheckerModalOutside(event){
+  if(event.target===document.getElementById('daily-checker-modal'))closeDailyCheckerModal();
+}
+
 function dailyCheckerInput(input){
   const day=String(input.dataset.day), field=input.dataset.field;
   if(!dailyCheckerEntries[day])dailyCheckerEntries[day]={};
