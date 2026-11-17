@@ -1411,6 +1411,13 @@ let dailyCheckerLoadToken = 0;
 function dailyCheckerEscape(value){
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
+function dailyCheckerFormatNumber(value){
+  const raw=String(value ?? '').replace(/,/g,'');
+  if(raw==='')return '';
+  const parts=raw.split('.');
+  parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return parts.join('.');
+}
 function dailyCheckerSetStatus(message, isError=false){
   const el=document.getElementById('daily-checker-status');
   if(el){el.textContent=message;el.style.color=isError?'#f87171':'var(--muted)';}
@@ -1428,8 +1435,8 @@ function renderDailyCheckerTable(){
     const entry=dailyCheckerEntries[String(day)]||{};
     html+=`<tr class="${invalid?'daily-checker-invalid-day':''}"><td class="daily-checker-date">${day}</td>`;
     for(const field of DAILY_CHECKER_FIELDS){
-      const value=dailyCheckerEscape(entry[field]??'');
       const isNumeric=DAILY_CHECKER_NUMERIC_FIELDS.has(field);
+      const value=dailyCheckerEscape(isNumeric?dailyCheckerFormatNumber(entry[field]??''):(entry[field]??''));
       if(isNumeric){
         html+=`<td><button type="button" class="daily-checker-number-cell" data-day="${day}" data-field="${field}" aria-label="Enter ${field} for day ${day}" onclick="openDailyCheckerModal(${day},'${field}')" ${invalid?'disabled':''}>${value}</button></td>`;
       }else{
@@ -1452,7 +1459,7 @@ function openDailyCheckerModal(day,field){
 }
 function dailyCheckerUpdateModalValue(){
   const el=document.getElementById('daily-checker-modal-value');
-  if(el)el.textContent=dailyCheckerModalState?.value||'0';
+  if(el)el.textContent=dailyCheckerFormatNumber(dailyCheckerModalState?.value||'')||'0';
 }
 function dailyCheckerKp(key){
   if(!dailyCheckerModalState)return;
@@ -1469,7 +1476,7 @@ function saveDailyCheckerModal(){
   if(!dailyCheckerEntries[day])dailyCheckerEntries[day]={};
   dailyCheckerEntries[day][field]=value;
   const cell=document.querySelector(`.daily-checker-number-cell[data-day="${day}"][data-field="${field}"]`);
-  if(cell)cell.textContent=value;
+  if(cell)cell.textContent=dailyCheckerFormatNumber(value);
   if(window.RRFB?.saveDailyChecker){
     window.RRFB.saveDailyChecker(dailyCheckerMonth,dailyCheckerEntries);
     dailyCheckerSetStatus('Saving changes...');
@@ -2469,12 +2476,12 @@ function loadSales(){
     const todayData=all[todayKey]||{};
     ['sales','tc','waste','discount','grab','fpanda'].forEach(f=>{
       const el=document.getElementById('s-'+f);
-      if(el&&todayData[f]!==undefined){el.value=todayData[f];el.dataset.raw=todayData[f];}
+      if(el&&todayData[f]!==undefined){el.dataset.raw=String(todayData[f]);el.value=Number(todayData[f]).toLocaleString('en-PH');}
     });
     ['mtd-tgt','mtd-ly','mtd','ac'].forEach(f=>{
       const el=document.getElementById('s-'+f);
       const key='mtd_'+f;
-      if(el&&all[key]!==undefined){el.value=all[key];el.dataset.raw=all[key];}
+      if(el&&all[key]!==undefined){el.dataset.raw=String(all[key]);el.value=Number(all[key]).toLocaleString('en-PH');}
     });
     updateMTD();
   }catch(e){}
@@ -3041,9 +3048,21 @@ function toggleTheme(){ applyTheme(currentTheme==='light'?'dark':'light'); }
 
 // ── SALES PESO FORMATTING ────────────────────────────────────
 function fmtSales(el){
-  // Store raw numeric value, allow user to type freely
-  const raw = el.value.replace(/[^0-9.]/g,'');
-  el.dataset.raw = raw;
+  // Keep an unformatted value for calculations/Firebase, but show thousands separators.
+  const oldValue=el.value;
+  const start=el.selectionStart ?? oldValue.length;
+  const digitsBefore=(oldValue.slice(0,start).match(/[0-9]/g)||[]).length;
+  const raw=oldValue.replace(/,/g,'').replace(/[^0-9.]/g,'');
+  el.dataset.raw=raw;
+  const parts=raw.split('.');
+  parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  const formatted=parts.join('.');
+  if(el.value!==formatted){
+    el.value=formatted;
+    let pos=0,seen=0;
+    while(pos<formatted.length && seen<digitsBefore){if(/[0-9]/.test(formatted[pos]))seen++;pos++;}
+    el.setSelectionRange(pos,pos);
+  }
   // Trigger MTD update if this is an MTD field
   if(el.id==='s-mtd'||el.id==='s-mtd-tgt') updateMTD();
   clearTimeout(window.__rrSalesSaveTimer);
