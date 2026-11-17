@@ -88,5 +88,52 @@ async function saveWeeklySchedule(schedule) {
     throw err;
   }
 }
-window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, setStatus };
+function dailyCheckerRef(monthKey) {
+  return doc(db, 'stores', STORE_ID, 'dailyChecker', monthKey);
+}
+async function loadDailyChecker(monthKey) {
+  if (!CONFIGURED || !db) { setStatus('⚠ Firebase config needed', false); throw new Error('Firebase is not configured'); }
+  try {
+    const snap = await getDoc(dailyCheckerRef(monthKey));
+    return snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.error('[Firebase] Daily Checker load failed:', err);
+    setStatus('⚠ Daily Checker load failed', false);
+    throw err;
+  }
+}
+const dailyCheckerSaveTimers = new Map();
+const dailyCheckerPending = new Map();
+async function saveDailyChecker(monthKey, entries, immediate = false) {
+  if (!CONFIGURED || !db) throw new Error('Firebase is not configured');
+  dailyCheckerPending.set(monthKey, clean(entries));
+  if (!immediate) {
+    clearTimeout(dailyCheckerSaveTimers.get(monthKey));
+    dailyCheckerSaveTimers.set(monthKey, setTimeout(() => { flushDailyChecker(monthKey).catch(() => {}); }, 400));
+    return;
+  }
+  clearTimeout(dailyCheckerSaveTimers.get(monthKey));
+  await flushDailyChecker(monthKey);
+}
+async function flushDailyChecker(monthKey) {
+  if (!dailyCheckerPending.has(monthKey)) return;
+  const entries = dailyCheckerPending.get(monthKey);
+  dailyCheckerPending.delete(monthKey);
+  dailyCheckerSaveTimers.delete(monthKey);
+  setStatus('☁ Saving Daily Checker...');
+  try {
+    await setDoc(dailyCheckerRef(monthKey), { month: monthKey, entries, updatedAt: serverTimestamp() }, { merge: true });
+    setStatus('✓ Daily Checker saved to Firebase');
+  } catch (err) {
+    console.error('[Firebase] Daily Checker save failed:', err);
+    dailyCheckerPending.set(monthKey, entries);
+    setStatus('⚠ Daily Checker save failed — check connection', false);
+    throw err;
+  }
+}
+async function clearDailyChecker(monthKey) {
+  await saveDailyChecker(monthKey, {}, true);
+}
+
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));

@@ -202,10 +202,6 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .request-form{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;align-items:end;margin:12px 0}
 .request-form label{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted)}
 .request-form textarea{min-height:36px;resize:vertical}.request-table{width:100%;border-collapse:collapse;font-size:.78rem}.request-table th,.request-table td{border:1px solid var(--border);padding:8px;text-align:left}.request-table th{background:var(--card)}
-.sched-cell-wrap{position:relative}
-.sched-cell option{color:#111;background:#fff}
-.sched-cell.sched-shift{color:transparent!important}
-.sched-cell-display{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:#111;pointer-events:none}
 /* Excel-inspired conditional formatting */
 .sched-rest{background:#e2f0d9!important;color:#006100!important;font-weight:800}
 .sched-leave{background:#fce4d6!important;color:#9c0006!important;font-weight:800}
@@ -232,24 +228,33 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
  .schedule-table th,.schedule-table td{padding:3px!important}
  .sched-cell{border:0!important;background:transparent!important;color:#000!important;font-size:7.5pt!important;appearance:none!important;padding:1px!important}
  .schedule-table-scroll{overflow:visible!important;border:0!important}
- .schedule-signatures{font-size:8pt!important;margin-top:12px!important}.schedule-paper{box-shadow:none!important;border:0!important;padding:0!important}.schedule-company{break-inside:avoid}.schedule-table th,.schedule-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}.sched-cell{color:#111!important}.schedule-company-head img{max-height:48px!important}.sched-cell-display{font-size:8.5pt!important;color:#000!important}
- #schedule-paper .schedule-company{margin-bottom:12px!important}
- #schedule-paper .schedule-company-head{padding-bottom:3px!important;margin-bottom:4px!important;gap:12px!important}
- #schedule-paper .schedule-company-head img{max-height:48px!important;max-width:150px!important}
- #schedule-paper .schedule-company-head .ssa-logo{max-height:52px!important;max-width:280px!important}
- #schedule-paper .schedule-company-title{font-size:13pt!important}
- #schedule-paper .schedule-company-title small{font-size:8pt!important;margin-top:2px!important}
- #schedule-paper .schedule-table th,#schedule-paper .schedule-table td{height:25px!important;padding:2px 3px!important;line-height:1.1!important}
- #schedule-paper .sched-cell{padding:0!important}
- #schedule-paper .sched-employee-input{font-size:9pt!important;padding:0!important}
- #schedule-paper .schedule-legend{margin:6px 0 0!important;gap:3px 12px!important;font-size:7.5pt!important}
- #schedule-paper .schedule-signatures{margin-top:6px!important;font-size:8pt!important;gap:16px!important}
- #schedule-paper .schedule-signatures div{padding-top:2px!important;line-height:1.25!important}
- #schedule-paper .schedule-signatures b{margin-bottom:1px!important}
- #schedule-paper .schedule-signatures strong{margin-top:8px!important;padding-top:1px!important}
- #schedule-paper .schedule-note{font-size:7.5pt!important;margin-top:6px!important}
- #weekly-save-preview{display:none!important}
+ .schedule-signatures{font-size:8pt!important;margin-top:12px!important}.schedule-paper{box-shadow:none!important;border:0!important;padding:0!important}.schedule-company{break-inside:avoid}.schedule-table th,.schedule-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}.sched-cell{color:#111!important}.schedule-company-head img{max-height:48px!important}
 }
+
+
+/* DAILY CHECKER — isolated styles; does not alter existing dashboard tables */
+.daily-checker-wrap{padding:12px;overflow:hidden}
+.daily-checker-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:.72rem}
+.daily-checker-toolbar label{font-weight:700;white-space:nowrap}
+.daily-checker-toolbar input[type=month]{min-width:145px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font:inherit}
+.daily-checker-clear{padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:.7rem;font-weight:700;cursor:pointer}
+.daily-checker-clear:hover{border-color:var(--accent);color:var(--accent)}
+#daily-checker-status{font-size:.66rem;color:var(--muted)}
+.daily-checker-table-scroll{width:100%;overflow-x:auto;border:1px solid var(--border);background:var(--surface)}
+.daily-checker-table{width:100%;min-width:1120px;table-layout:fixed;border-collapse:collapse;background:var(--surface);color:var(--text);font-size:.62rem}
+.daily-checker-table th,.daily-checker-table td{border:1px solid var(--border);padding:0;text-align:center;vertical-align:middle}
+.daily-checker-table th{font-weight:600;line-height:1.35;white-space:normal;padding:7px 4px;background:var(--card)}
+.daily-checker-table .daily-checker-title-row th{height:48px;background:var(--surface);font-size:.7rem;letter-spacing:.04em;font-weight:600}
+.daily-checker-table .daily-checker-group-row th{height:32px}
+.daily-checker-table .daily-checker-column-row th{height:52px;font-size:.57rem}
+.daily-checker-table td.daily-checker-date{font-weight:600;width:6%;height:24px;background:var(--surface)}
+.daily-checker-table tbody tr:nth-child(even) td{background:var(--row-even)}
+.daily-checker-table tbody tr.daily-checker-invalid-day td{opacity:.28;background:var(--card)!important}
+.daily-checker-table td input{display:block;width:100%;height:25px;min-width:0;padding:3px 2px;border:0;border-radius:0;outline:none;background:transparent;color:var(--text);font:inherit;text-align:center;box-sizing:border-box}
+.daily-checker-table td input:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
+.daily-checker-table td input[type=text]{text-align:left;padding-left:5px}
+.daily-checker-table td input:disabled{cursor:not-allowed}
+@media(max-width:700px){.daily-checker-wrap{padding:8px}.daily-checker-toolbar{gap:7px}.daily-checker-toolbar #daily-checker-status{flex-basis:100%}}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -293,6 +298,11 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
     <button class="sub-btn" id="sub-btn-products" onclick="switchTab('products')">Manage Products</button>
     <button class="sub-btn" id="sub-btn-mtdvar" onclick="switchTab('mtdvar')">MTD Var</button>
     <button class="sub-btn" id="sub-btn-ydic" onclick="switchTab('ydic')">Yesterday's DIC</button>
+  </div>
+  <!-- SALES sub-tabs -->
+  <div class="sub-tabs" id="sub-sales" style="display:none">
+    <button class="sub-btn active" id="sub-btn-sales" onclick="switchTab('sales')">Sales</button>
+    <button class="sub-btn" id="sub-btn-dailychecker" onclick="switchTab('dailychecker')">Daily Checker</button>
   </div>
 
   <!-- DIC TAB -->
@@ -422,6 +432,53 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAILY CHECKER TAB -->
+  <div id="tab-dailychecker" class="tab-content">
+    <div class="daily-checker-wrap">
+      <div class="daily-checker-toolbar">
+        <label for="daily-checker-month">MONTH:</label>
+        <input id="daily-checker-month" type="month" onchange="changeDailyCheckerMonth(this.value)" />
+        <button class="daily-checker-clear" type="button" onclick="clearDailyCheckerMonth()">Clear Daily Checker</button>
+        <span id="daily-checker-status" aria-live="polite">Loading saved entries...</span>
+      </div>
+      <div class="daily-checker-table-scroll">
+        <table class="daily-checker-table">
+          <colgroup>
+            <col style="width:6%" />
+            <col span="6" style="width:7.5%" />
+            <col span="2" style="width:7.5%" />
+            <col style="width:10%" />
+            <col style="width:10%" />
+            <col style="width:9%" />
+          </colgroup>
+          <thead>
+            <tr class="daily-checker-title-row"><th colspan="12">NON-CASH MONITORING</th></tr>
+            <tr class="daily-checker-group-row">
+              <th rowspan="2">DATE</th>
+              <th colspan="6">AGGREGATORS</th>
+              <th colspan="2">DIGITAL</th>
+              <th colspan="3">RESPONSIBLE PERSON</th>
+            </tr>
+            <tr class="daily-checker-column-row">
+              <th>GRAB POS SALES</th>
+              <th>GRAB TERMINAL SALES</th>
+              <th>FOOD PANDA POS SALES</th>
+              <th>FOOD PANDA TERMINAL SALES</th>
+              <th>TIKTOK POS SALES</th>
+              <th>TIKTOK TERMINAL SALES</th>
+              <th>MAYA POS SALES</th>
+              <th>MAYA TERMINAL SALES</th>
+              <th>CASHIER NAME &amp; SIGNATURE</th>
+              <th>MOD NAME &amp; SIGNATURE</th>
+              <th>REMARKS</th>
+            </tr>
+          </thead>
+          <tbody id="daily-checker-tbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -594,8 +651,6 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
           <button onclick="addScheduleEmployee()">+ Add Employee</button>
           <button onclick="editDefaultRestDays()">Edit Default RDs</button>
           <button onclick="printWeeklySchedule()">Print Schedule</button>
-          <button onclick="saveWeeklyPNG()">Save PNG</button>
-          <button onclick="saveWeeklyPDF()">Save PDF</button>
         </div>
         <div class="schedule-paper" id="schedule-paper">
           <section class="schedule-company" id="schedule-redribbon-section">
@@ -612,7 +667,6 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
           </section>
           <div class="schedule-note">NOTE: REQUEST RD MAY OR MAY NOT BE GRANTED. SCHED IS NOT FINAL UNLESS PRINTED. THANKS</div>
         </div>
-        <div id="weekly-save-preview" class="no-print"></div>
       </section>
       <section id="weekly-requests-panel" style="display:none">
         <h3>Request Sched</h3>
@@ -748,7 +802,7 @@ const BREAD_PRODUCTS = [
   {group:'CAKE SLICES'},
   {code:'CCS',     cutoff:'-3 days'},{code:'CHCS',    cutoff:'-2 days'},
   {code:'CPBCS',   cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
-  {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},{code:'RVCS', cutoff:'-2 days'},
+  {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
   {group:'MOIST'},
   {code:'BCR-S',   cutoff:'-2 days'},{code:'BCRLF',   cutoff:'-2 days'},
   {code:'MC-S',    cutoff:'-2 days'},{code:'MC-L',    cutoff:'-2 days'},
@@ -1293,35 +1347,157 @@ function checkPw(){
 }
 document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw();});
 
+// ── DAILY CHECKER ─────────────────────────────────────────────
+const DAILY_CHECKER_FIELDS = [
+  'grabPos','grabTerminal','foodPandaPos','foodPandaTerminal',
+  'tiktokPos','tiktokTerminal','mayaPos','mayaTerminal',
+  'cashier','mod','remarks'
+];
+const DAILY_CHECKER_NUMERIC_FIELDS = new Set([
+  'grabPos','grabTerminal','foodPandaPos','foodPandaTerminal',
+  'tiktokPos','tiktokTerminal','mayaPos','mayaTerminal'
+]);
+let dailyCheckerMonth = (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+let dailyCheckerEntries = {};
+let dailyCheckerLoadedMonth = '';
+let dailyCheckerLoadToken = 0;
+
+function dailyCheckerEscape(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function dailyCheckerSetStatus(message, isError=false){
+  const el=document.getElementById('daily-checker-status');
+  if(el){el.textContent=message;el.style.color=isError?'#f87171':'var(--muted)';}
+}
+function renderDailyCheckerTable(){
+  const picker=document.getElementById('daily-checker-month');
+  if(picker && picker.value!==dailyCheckerMonth)picker.value=dailyCheckerMonth;
+  const body=document.getElementById('daily-checker-tbody');
+  if(!body)return;
+  const [year,month]=dailyCheckerMonth.split('-').map(Number);
+  const daysInMonth=new Date(year,month,0).getDate();
+  let html='';
+  for(let day=1;day<=31;day++){
+    const invalid=day>daysInMonth;
+    const entry=dailyCheckerEntries[String(day)]||{};
+    html+=`<tr class="${invalid?'daily-checker-invalid-day':''}"><td class="daily-checker-date">${day}</td>`;
+    for(const field of DAILY_CHECKER_FIELDS){
+      const value=dailyCheckerEscape(entry[field]??'');
+      const isNumeric=DAILY_CHECKER_NUMERIC_FIELDS.has(field);
+      const type=isNumeric?'number':'text';
+      const attrs=isNumeric?'inputmode="decimal" min="0" step="any"':'autocomplete="off"';
+      html+=`<td><input type="${type}" ${attrs} value="${value}" data-day="${day}" data-field="${field}" aria-label="Day ${day} ${field}" oninput="dailyCheckerInput(this)" ${invalid?'disabled':''}></td>`;
+    }
+    html+='</tr>';
+  }
+  body.innerHTML=html;
+}
+function dailyCheckerInput(input){
+  const day=String(input.dataset.day), field=input.dataset.field;
+  if(!dailyCheckerEntries[day])dailyCheckerEntries[day]={};
+  dailyCheckerEntries[day][field]=input.value;
+  // Save only this feature's separate monthly Firestore document.
+  if(window.RRFB?.saveDailyChecker){
+    window.RRFB.saveDailyChecker(dailyCheckerMonth,dailyCheckerEntries);
+    dailyCheckerSetStatus('Saving changes...');
+  }else{
+    dailyCheckerSetStatus('Firebase is not ready yet; your entry is not saved to the cloud.',true);
+  }
+}
+async function loadDailyCheckerMonth(monthKey=dailyCheckerMonth){
+  if(!/^\d{4}-\d{2}$/.test(monthKey))return;
+  dailyCheckerMonth=monthKey;
+  const picker=document.getElementById('daily-checker-month');
+  if(picker && picker.value!==monthKey)picker.value=monthKey;
+  const token=++dailyCheckerLoadToken;
+  dailyCheckerEntries={};
+  renderDailyCheckerTable();
+  if(!window.RRFB?.loadDailyChecker){
+    dailyCheckerSetStatus('Waiting for Firebase connection...',true);
+    return;
+  }
+  dailyCheckerSetStatus('Loading saved entries...');
+  try{
+    const data=await window.RRFB.loadDailyChecker(monthKey);
+    if(token!==dailyCheckerLoadToken)return;
+    dailyCheckerEntries=data?.entries&&typeof data.entries==='object'?data.entries:{};
+    dailyCheckerLoadedMonth=monthKey;
+    renderDailyCheckerTable();
+    dailyCheckerSetStatus(`Loaded ${monthKey}`);
+  }catch(error){
+    console.error('[Daily Checker] load failed:',error);
+    if(token===dailyCheckerLoadToken)dailyCheckerSetStatus('Could not load this month from Firebase. Check connection or Firestore rules.',true);
+  }
+}
+function changeDailyCheckerMonth(monthKey){loadDailyCheckerMonth(monthKey);}
+async function clearDailyCheckerMonth(){
+  const monthKey=dailyCheckerMonth;
+  if(!confirm(`Clear all Daily Checker entries for ${monthKey}? Other months and all other dashboard data will remain unchanged.`))return;
+  if(!window.RRFB?.clearDailyChecker){
+    dailyCheckerSetStatus('Firebase is not ready; nothing was cleared.',true);
+    return;
+  }
+  const previousEntries=JSON.parse(JSON.stringify(dailyCheckerEntries));
+  try{
+    dailyCheckerEntries={};
+    renderDailyCheckerTable();
+    dailyCheckerSetStatus('Clearing selected month...');
+    await window.RRFB.clearDailyChecker(monthKey);
+    dailyCheckerLoadedMonth=monthKey;
+    dailyCheckerSetStatus(`Cleared ${monthKey}`);
+  }catch(error){
+    console.error('[Daily Checker] clear failed:',error);
+    dailyCheckerEntries=previousEntries;
+    renderDailyCheckerTable();
+    dailyCheckerSetStatus('Could not clear this month in Firebase. Your entries were restored on screen.',true);
+  }
+}
+
 // ── TAB SWITCH ───────────────────────────────────────────────
 const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic'];
+const SALES_SUBS=['sales','dailychecker'];
 function switchMain(main){
   ['dic','sales','print','weekly'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
   });
-  // show/hide sub-tab bar
-  const subBar=document.getElementById('sub-dic');
+  const dicBar=document.getElementById('sub-dic');
+  const salesBar=document.getElementById('sub-sales');
   if(main==='dic'){
-    subBar.style.display='flex';
-    // activate whichever dic sub was last active
-    const active=subBar.querySelector('.sub-btn.active');
+    dicBar.style.display='flex';
+    salesBar.style.display='none';
+    const active=dicBar.querySelector('.sub-btn.active');
     const tab=active?active.id.replace('sub-btn-',''):'dic';
     switchTab(tab);
+  } else if(main==='sales'){
+    dicBar.style.display='none';
+    salesBar.style.display='flex';
+    const active=salesBar.querySelector('.sub-btn.active');
+    const tab=active?active.id.replace('sub-btn-',''):'sales';
+    switchTab(tab);
   } else {
-    subBar.style.display='none';
+    dicBar.style.display='none';
+    salesBar.style.display='none';
     if(main==='weekly'){ document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.getElementById('tab-weekly').classList.add('active'); renderWeeklySchedule(); }
     else switchTab(main);
   }
 }
 function switchTab(name){
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
+  const target=document.getElementById('tab-'+name);
+  if(target)target.classList.add('active');
   if(DIC_SUBS.includes(name)){
     DIC_SUBS.forEach(s=>{
       const b=document.getElementById('sub-btn-'+s);
       if(b) b.classList.toggle('active',s===name);
     });
   }
+  if(SALES_SUBS.includes(name)){
+    SALES_SUBS.forEach(s=>{
+      const b=document.getElementById('sub-btn-'+s);
+      if(b)b.classList.toggle('active',s===name);
+    });
+  }
+  if(name==='dailychecker')loadDailyCheckerMonth(dailyCheckerMonth);
   // Refresh Count variances whenever Count tab is opened
   if(name==='count') refreshCountVariances();
 }
@@ -2921,8 +3097,8 @@ function renderWeeklySchedule(){
   const table=document.getElementById(group.table);if(!table)return;
   const members=weeklySchedule.employees.map((e,ei)=>({...e,_i:ei})).filter(e=>(e.company||((e._i>=4)?'Staff Search Asia':'Red Ribbon'))===group.company);
   let html=`<thead><tr><th>NAME</th>${dayHeaders}</tr></thead><tbody>`;
-  members.forEach(e=>{html+=`<tr><td class="name-cell"><input class="sched-employee-input" value="${escSched(e.name)}" onchange="editScheduleEmployee(${e._i},'name',this.value)"></td>`;
-   days.forEach((d,di)=>{const key=weeklyCellKey(e._i,weeklyDateISO(d)),v=normalizeWeeklyShift(weeklySchedule.cells[key]||''),isShift=!!WEEKLY_SHIFT_TIMES[v];html+=`<td><div class="sched-cell-wrap"><select aria-label="${escSched(e.name)} ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][di]} shift" class="sched-cell ${weeklyClass(v)}${isShift?' sched-shift':''}" onchange="setWeeklyCell('${key}',this.value)">${WEEKLY_SHIFT_OPTIONS.map(o=>`<option value="${escSched(o)}" ${o===v?'selected':''}>${o||'—'}</option>`).join('')}</select>${isShift?`<span class="sched-cell-display">${escSched(WEEKLY_SHIFT_TIMES[v].replace('-','\u2013'))}</span>`:''}</div></td>`;});html+='</tr>';});
+  members.forEach(e=>{html+=`<tr><td class="name-cell"><input class="sched-employee-input" value="${escSched(e.name)}" onchange="editScheduleEmployee(${e._i},'name',this.value)"><button class="no-print" style="font-size:10px" onclick="removeScheduleEmployee(${e._i})">Remove</button></td>`;
+   days.forEach((d,di)=>{const key=weeklyCellKey(e._i,weeklyDateISO(d)),v=normalizeWeeklyShift(weeklySchedule.cells[key]||'');html+=`<td><select aria-label="${escSched(e.name)} ${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][di]} shift" class="sched-cell ${weeklyClass(v)}" onchange="setWeeklyCell('${key}',this.value)">${WEEKLY_SHIFT_OPTIONS.map(o=>`<option value="${escSched(o)}" ${o===v?'selected':''}>${o||'—'}</option>`).join('')}</select></td>`;});html+='</tr>';});
   if(members.length){html+=`<tr class="schedule-break"><td class="name-cell">BREAK TIME</td>${days.map((d,i)=>`<td><input class="sched-cell" value="${escSched(weeklySchedule.breaks[i]||'15/60/15   15/60/15')}" onchange="setWeeklyBreak(${i},this.value)"></td>`).join('')}</tr>`;}
   html+='</tbody>';table.innerHTML=html;
  });
@@ -2946,136 +3122,7 @@ function removeScheduleRequest(i){weeklySchedule.requests.splice(i,1);weeklyChan
 function renderScheduleRequests(){const body=document.getElementById('weekly-requests-body');if(!body)return;body.innerHTML=weeklySchedule.requests.map((r,i)=>`<tr><td>${escSched(r.employee)}</td><td>${escSched(r.date)}</td><td>${escSched(r.type)}</td><td>${escSched(r.reason)}</td><td class="no-print"><button onclick="removeScheduleRequest(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="5">No schedule requests yet.</td></tr>';}
 function printWeeklySchedule(){switchWeeklySub('schedule');window.print();}
 async function loadWeeklySchedule(){try{const data=await window.RRFB?.loadWeeklySchedule?.();if(data&&data.weeklySchedule){weeklySchedule={...weeklySchedule,...data.weeklySchedule};if(!Array.isArray(weeklySchedule.employees))weeklySchedule.employees=WEEKLY_DEFAULT_EMPLOYEES.map(x=>({...x,rd:[...x.rd]}));if(!Array.isArray(weeklySchedule.breaks))weeklySchedule.breaks=Array(7).fill('15/60/15   15/60/15');if(!Array.isArray(weeklySchedule.requests))weeklySchedule.requests=[];weeklySchedule.employees=weeklySchedule.employees.map((e,i)=>({...e,company:e.company||((i>=4||/MARY|JESS/i.test(e.name))?'Staff Search Asia':'Red Ribbon'),rd:Array.isArray(e.rd)?e.rd:[]}));Object.keys(weeklySchedule.cells||{}).forEach(k=>weeklySchedule.cells[k]=normalizeWeeklyShift(weeklySchedule.cells[k]));}else if(!weeklySchedule.weekStart){weeklySchedule.weekStart=weeklyDateISO(weeklyMonday(new Date()));}}catch(e){console.error('[Weekly Schedule] load failed',e);}weeklyLoaded=true;renderWeeklySchedule();}
-
-// ── WEEKLY SCHEDULE: SAVE AS PNG / PDF (Letter landscape, same layout as print) ──
-function weeklyStyleFor(cls){
-  const t=document.createElement('span');t.className=cls;t.style.display='none';document.body.appendChild(t);
-  const cs=getComputedStyle(t),bg=cs.backgroundColor,fg=cs.color,fw=cs.fontWeight;t.remove();
-  return {bg:(bg&&bg!=='rgba(0, 0, 0, 0)'&&bg!=='transparent')?bg:null,fg:fg,bold:parseInt(fw)>=700};
-}
-function weeklyReadSection(sec){
-  const img=sec.querySelector('.schedule-company-head img');
-  const title=sec.querySelector('.schedule-company-title');
-  const table=sec.querySelector('table');
-  const head=[...table.querySelectorAll('thead th')].map(th=>th.innerHTML.split(/<br\s*\/?>/i).map(x=>x.replace(/<[^>]*>/g,'').trim()));
-  const rows=[...table.querySelectorAll('tbody tr')].map(tr=>{
-    const isBreak=tr.classList.contains('schedule-break');
-    const cells=[...tr.children].map((td,ci)=>{
-      const sel=td.querySelector('select'),inp=td.querySelector('input');
-      if(sel){const sp=td.querySelector('.sched-cell-display');const txt=sp?sp.textContent:(sel.options[sel.selectedIndex]?.text||'');
-        const cls=[...sel.classList].filter(c=>c.startsWith('sched-')&&c!=='sched-cell'&&c!=='sched-shift');
-        return {text:txt==='—'?'':txt,cls:cls.join(' ')};}
-      if(inp)return {text:inp.value,cls:''};
-      return {text:td.textContent.trim(),cls:''};
-    });
-    return {isBreak,cells};
-  });
-  const legend=[...sec.querySelectorAll('.schedule-legend span')].map(sp=>({b:sp.querySelector('b')?.textContent||'',rest:sp.textContent.slice((sp.querySelector('b')?.textContent||'').length)}));
-  const sigs=[...sec.querySelectorAll('.schedule-signatures > div')].map(d=>d.innerHTML.split(/<br\s*\/?>/i).map(x=>x.replace(/<[^>]*>/g,'').trim()));
-  return {img,title:title.childNodes[0].textContent.trim(),sub:title.querySelector('small').textContent.replace(/\s+/g,' ').trim(),head,rows,legend,sigs};
-}
-function weeklyCanvas(){
-  switchWeeklySub('schedule');
-  const W=2200,H=1700,M=70,F='Segoe UI, Arial, sans-serif';
-  const secs=[...document.querySelectorAll('#schedule-paper .schedule-company')].map(weeklyReadSection);
-  const note=(document.querySelector('#schedule-paper .schedule-note')||{}).textContent||'';
-  const base={head:135,hdr:58,row:54,legend:52,sig:170,gap:34};
-  let need=70; secs.forEach(sc=>{need+=base.head+base.hdr+sc.rows.length*base.row+base.legend+(sc.sigs.length?base.sig:0)+base.gap;});
-  const k=Math.max(0.45,Math.min(1.12,(H-2*M)/need));
-  const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-  const TW=W-2*M,nameW=Math.round(TW*0.16),dayW=(TW-nameW)/7;
-  let y=M;
-  ctx.textBaseline='middle';
-  secs.forEach(sc=>{
-    // header: logo + title
-    const hh=base.head*k-14*k;let logoR=M;
-    if(sc.img&&sc.img.complete&&sc.img.naturalWidth){
-      const isSSA=sc.img.classList.contains('ssa-logo');
-      const maxW=(isSSA?640:320)*k,maxH=(isSSA?130:112)*k;
-      const r=Math.min(maxW/sc.img.naturalWidth,maxH/sc.img.naturalHeight);
-      const w=sc.img.naturalWidth*r,h=sc.img.naturalHeight*r;
-      ctx.drawImage(sc.img,M,y+(hh-h)/2,w,h);logoR=M+w;
-    }
-    const cx=logoR+(W-M-logoR)/2;
-    ctx.fillStyle='#111';ctx.textAlign='center';
-    ctx.font=`bold ${34*k}px ${F}`;ctx.fillText(sc.title,cx,y+hh*0.38);
-    ctx.font=`600 ${21*k}px ${F}`;ctx.fillText(sc.sub,cx,y+hh*0.72);
-    y+=hh;ctx.fillStyle='#222';ctx.fillRect(M,y,TW,4*k);y+=14*k;
-    // table
-    const rh=base.row*k,hr=base.hdr*k;
-    const drawCell=(x,yy,w,h,bg,fg,text,bold,align,size)=>{
-      ctx.fillStyle=bg||'#fff';ctx.fillRect(x,yy,w,h);
-      ctx.strokeStyle='#333';ctx.lineWidth=2;ctx.strokeRect(x,yy,w,h);
-      ctx.fillStyle=fg||'#111';ctx.font=`${bold?'bold ':''}${size}px ${F}`;ctx.textAlign=align;
-      ctx.fillText(text,align==='left'?x+14*k:x+w/2,yy+h/2+1);
-    };
-    // header row
-    sc.head.forEach((parts,ci)=>{
-      const x=ci===0?M:M+nameW+(ci-1)*dayW,w=ci===0?nameW:dayW;
-      ctx.fillStyle='#e7e6e6';ctx.fillRect(x,y,w,hr);ctx.strokeStyle='#333';ctx.lineWidth=2;ctx.strokeRect(x,y,w,hr);
-      ctx.fillStyle='#111';ctx.textAlign='center';ctx.font=`bold ${22*k}px ${F}`;
-      if(parts.length>1){ctx.fillText(parts[0],x+w/2,y+hr*0.30);ctx.fillText(parts[1],x+w/2,y+hr*0.72);}
-      else ctx.fillText(parts[0],x+w/2,y+hr/2);
-    });
-    y+=hr;
-    sc.rows.forEach(r=>{
-      r.cells.forEach((c,ci)=>{
-        const x=ci===0?M:M+nameW+(ci-1)*dayW,w=ci===0?nameW:dayW;
-        if(ci===0){drawCell(x,y,w,rh,'#f2f2f2','#111',c.text,true,'left',23*k);}
-        else if(r.isBreak){drawCell(x,y,w,rh,'#ffc000','#111',c.text,true,'center',19*k);}
-        else{const st=c.cls?weeklyStyleFor(c.cls):{bg:null,fg:'#111',bold:false};drawCell(x,y,w,rh,st.bg,st.fg,c.text,st.bold,'center',23*k);}
-      });
-      y+=rh;
-    });
-    y+=10*k;
-    // legend
-    ctx.textAlign='left';let lx=M;const ly=y+16*k;ctx.font=`${20*k}px ${F}`;
-    sc.legend.forEach(l=>{
-      ctx.fillStyle='#111';ctx.font=`bold ${20*k}px ${F}`;ctx.fillText(l.b,lx,ly);lx+=ctx.measureText(l.b).width;
-      ctx.font=`${20*k}px ${F}`;ctx.fillText(l.rest,lx,ly);lx+=ctx.measureText(l.rest).width+34*k;
-    });
-    y+=base.legend*k-10*k;
-    // signatures
-    if(sc.sigs.length){
-      sc.sigs.forEach((lines,si)=>{
-        const sx=si===0?M:M+TW/2+12*k;let sy=y+12*k;
-        ctx.textAlign='left';ctx.fillStyle='#111';
-        ctx.font=`bold ${20*k}px ${F}`;ctx.fillText(lines[0]||'',sx,sy);sy+=44*k;
-        ctx.font=`bold ${20*k}px ${F}`;const nw=Math.max(400*k,ctx.measureText(lines[1]||'').width+10*k);
-        ctx.fillStyle='#333';ctx.fillRect(sx,sy-18*k,nw,2*k);ctx.fillStyle='#111';ctx.fillText(lines[1]||'',sx,sy);sy+=30*k;
-        ctx.font=`${20*k}px ${F}`;ctx.fillText(lines[2]||'',sx,sy);sy+=30*k;ctx.fillText(lines[3]||'',sx,sy);
-      });
-      y+=base.sig*k;
-    }
-    y+=base.gap*k*0.5;
-  });
-  if(note){ctx.fillStyle='#111';ctx.textAlign='left';ctx.font=`bold ${19*k}px ${F}`;ctx.fillText(note.trim(),M,Math.min(y+20*k,H-M/2));}
-  return canvas;
-}
-function weeklyFileStamp(){return (weeklySchedule.weekStart||weeklyDateISO(new Date())).replace(/-/g,'');}
-function saveWeeklyPNG(){
-  const box=document.getElementById('weekly-save-preview');
-  try{
-    const src=weeklyCanvas().toDataURL('image/png');
-    box.innerHTML=`<p style="font-size:.72rem;color:var(--muted);margin:14px 0 8px">⬇ Long-press the image (mobile) or tap the button below:</p>
-      <img src="${src}" style="width:100%;max-width:1100px;border-radius:8px;border:1px solid var(--border);background:#fff">
-      <a href="${src}" download="Weekly_Schedule_${weeklyFileStamp()}.png" style="display:block;max-width:1100px;text-align:center;margin-top:10px;padding:10px;background:#e94560;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">⬇ Download PNG</a>`;
-    box.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }catch(e){box.innerHTML='<p style="color:#e94560">Error: '+escSched(e.message)+'</p>';}
-}
-function saveWeeklyPDF(){
-  const box=document.getElementById('weekly-save-preview');
-  try{
-    const {jsPDF}=window.jspdf;
-    const img=weeklyCanvas().toDataURL('image/png');
-    const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'letter'});
-    doc.addImage(img,'PNG',0,0,792,612,undefined,'FAST');
-    doc.save(`Weekly_Schedule_${weeklyFileStamp()}.pdf`);
-    box.innerHTML='';
-  }catch(e){box.innerHTML='<p style="color:#e94560">Error: '+escSched(e.message)+'</p>';}
-}
-window.addEventListener('rr-firebase-ready',()=>{loadWeeklySchedule();});
+window.addEventListener('rr-firebase-ready',()=>{loadWeeklySchedule();loadDailyCheckerMonth(dailyCheckerMonth);});
 
 </script>
 <script type="module">

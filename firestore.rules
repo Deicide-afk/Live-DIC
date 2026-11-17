@@ -12,6 +12,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Monthly Daily Checker records, kept separate from the daily DIC data.
+    match /stores/RR7024/dailyChecker/{monthKey} {
+      allow read, write: if true;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
