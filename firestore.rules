@@ -17,6 +17,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Non Cash monthly reconciliation (one document per month, e.g. 2026-11).
+    match /stores/RR7024/nonCash/{monthId} {
+      allow read, write: if true;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
