@@ -135,5 +135,17 @@ async function clearDailyChecker(monthKey) {
   await saveDailyChecker(monthKey, {}, true);
 }
 
-window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus };
+function nonCashRef(month) {
+  return doc(db, 'stores', STORE_ID, 'nonCash', month);
+}
+async function loadNonCash(month) {
+  if (!CONFIGURED || !db) return null;
+  const snap = await getDoc(nonCashRef(month));
+  return snap.exists() ? snap.data() : null;
+}
+async function saveNonCash(month, state) {
+  if (!CONFIGURED || !db) throw new Error('Firebase not configured');
+  await setDoc(nonCashRef(month), clean(state));
+}
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));

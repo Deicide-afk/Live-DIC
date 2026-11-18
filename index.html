@@ -276,10 +276,49 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .daily-checker-number-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:25px;padding:3px 2px;border:0;background:transparent;color:var(--text);font:inherit;text-align:center;cursor:pointer;box-sizing:border-box}
 .daily-checker-number-cell:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
 @media(max-width:700px){.daily-checker-wrap{padding:8px}.daily-checker-toolbar{gap:7px}.daily-checker-toolbar #daily-checker-status{flex-basis:100%}}
+
+/* NON CASH */
+.nc-wrap{padding:12px 12px 90px;max-width:1150px;margin:0 auto}
+.nc-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.nc-month{font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.nc-month input{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.85rem;font-family:var(--font)}
+.nc-save{font-size:.7rem;color:var(--green);min-height:1em}
+.nc-drop{display:block;border:2px dashed var(--border);border-radius:14px;padding:16px 14px;text-align:center;cursor:pointer;background:var(--surface);transition:border-color .2s,background .2s}
+.nc-drop:hover,.nc-drop.drag{border-color:var(--accent2);background:var(--card)}
+.nc-drop-title{font-size:.9rem;font-weight:700;color:var(--text)}
+.nc-drop-sub{font-size:.7rem;color:var(--muted);margin-top:4px;line-height:1.45}
+.nc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.nc-chip{font-size:.66rem;font-weight:600;padding:4px 10px;border-radius:99px;border:1px solid var(--border);color:var(--muted);background:var(--surface)}
+.nc-chip.on{color:var(--green);border-color:var(--green)}
+.nc-notes{font-size:.7rem;color:var(--muted);margin-top:8px;line-height:1.5}
+.nc-views{display:flex;gap:6px;margin:14px 0 4px;overflow-x:auto}
+.nc-vbtn{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font)}
+.nc-vbtn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.nc-badge{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:99px;background:#f87171;color:#fff;font-size:.62rem;line-height:18px;text-align:center}
+.nc-vbtn.active .nc-badge{background:#fff;color:var(--accent)}
+.nc-summary{font-size:.78rem;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:10px 0}
+.nc-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin-top:6px}
+table.nc-table{border-collapse:collapse;width:100%;font-size:.72rem;min-width:680px}
+.nc-table th{background:var(--card);padding:6px 7px;border:1px solid var(--border);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;color:var(--accent2)}
+.nc-table td{padding:5px 7px;border:1px solid var(--border);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nc-table th.nc-date,.nc-table td.nc-date{text-align:left;position:sticky;left:0;z-index:1;background:var(--surface);font-weight:600}
+.nc-table th.nc-date{background:var(--card);z-index:2}
+.nc-table tr.nc-bad td{background:rgba(233,69,96,.14)}
+.nc-table tr.nc-bad td.nc-date{background:var(--surface);box-shadow:inset 4px 0 0 var(--accent)}
+.nc-table tr.nc-total td{font-weight:800;background:var(--card)}
+.nc-table td.nc-ids{text-align:left;white-space:normal;min-width:130px;font-size:.66rem;color:var(--muted)}
+.nc-table td.nc-left{text-align:left}
+.nc-neg{color:#f87171;font-weight:700}.nc-ok{color:var(--green)}.nc-dim{color:var(--muted);opacity:.7}
+input.nc-in{width:74px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 5px;text-align:right;font-size:.72rem;font-family:var(--font)}
+input.nc-rem{width:170px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 6px;font-size:.72rem;font-family:var(--font)}
+input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
+.nc-foot{margin-top:18px;text-align:right}
+.nc-foot button{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:.7rem;cursor:pointer;font-family:var(--font)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -323,6 +362,7 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
   <div class="sub-tabs" id="sub-sales" style="display:none">
     <button class="sub-btn active" id="sub-btn-sales" onclick="switchTab('sales')">Sales</button>
     <button class="sub-btn" id="sub-btn-dailychecker" onclick="switchTab('dailychecker')">Daily Checker</button>
+    <button class="sub-btn" id="sub-btn-noncash" onclick="switchTab('noncash')">Non Cash</button>
   </div>
 
   <!-- DIC TAB -->
@@ -500,6 +540,26 @@ table.ps-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
           <tbody id="daily-checker-tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- NON CASH TAB -->
+  <div id="tab-noncash" class="tab-content">
+    <div class="nc-wrap">
+      <div class="nc-toolbar">
+        <label class="nc-month">Month <input type="month" id="nc-month" onchange="ncSetMonth(this.value)"></label>
+        <div class="nc-save" id="nc-save-status"></div>
+      </div>
+      <label class="nc-drop" id="nc-drop" for="nc-files">
+        <input type="file" id="nc-files" multiple accept=".xlsx,.xls,.csv,.txt,.tsv" hidden onchange="ncHandleFiles(this.files);this.value=''">
+        <div class="nc-drop-title">📥 Upload exports</div>
+        <div class="nc-drop-sub">POS Non Cash Summary Report · GrabFood · Foodpanda · TikTok — or your whole monthly workbook. Files are recognised automatically and only the days they contain get updated.</div>
+      </label>
+      <div class="nc-chips" id="nc-chips"></div>
+      <div class="nc-notes" id="nc-notes"></div>
+      <div class="nc-views" id="nc-views"></div>
+      <div id="nc-view"></div>
+      <div class="nc-foot"><button onclick="ncClearMonth()">Clear this month</button></div>
     </div>
   </div>
 
@@ -1555,7 +1615,7 @@ async function clearDailyCheckerMonth(){
 
 // ── TAB SWITCH ───────────────────────────────────────────────
 const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic'];
-const SALES_SUBS=['sales','dailychecker'];
+const SALES_SUBS=['sales','dailychecker','noncash'];
 function switchMain(main){
   ['dic','sales','print','weekly'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
@@ -1598,6 +1658,7 @@ function switchTab(name){
     });
   }
   if(name==='dailychecker')loadDailyCheckerMonth(dailyCheckerMonth);
+  if(name==='noncash'&&typeof ncOpen==='function')ncOpen();
   if(name==='count') refreshCountVariances();
 }
 
@@ -3364,6 +3425,487 @@ function saveWeeklyPDF(){
 }
 window.addEventListener('rr-firebase-ready',()=>{loadWeeklySchedule();loadDailyCheckerMonth(dailyCheckerMonth);});
 
+</script>
+<script>
+/* NC-ENGINE-START */
+// ── NON CASH ENGINE (pure functions – ported from the monthly workbook formulas) ──
+var NC_OTHER=['GRAB PROMO','GIFTAWAY eGC','PWAF-RED RIBBON','GCASH ONLINE','MAYA QR','SHARE TREATS','SHOPEE PAY','PAYMAYA ONLINE','SC/PWD GFCHRGE'];
+var NC_MONTH_NAMES=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+function ncNorm(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUpperCase();}
+function ncNum(v){
+  if(typeof v==='number')return isFinite(v)?v:0;
+  if(v==null)return 0;
+  var n=parseFloat(String(v).replace(/[₱,\s]/g,''));
+  return isFinite(n)?n:0;
+}
+function ncR2(x){return Math.round(x*100)/100;}
+function ncPad(n){return (n<10?'0':'')+n;}
+function ncKey(y,m,d){return y+'-'+ncPad(m)+'-'+ncPad(d);}
+function ncMonthIdx(name){var i=NC_MONTH_NAMES.indexOf(String(name).slice(0,3).toLowerCase());return i<0?0:i+1;}
+function ncSerialToKey(n){
+  var dt=new Date(Date.UTC(1899,11,30)+Math.floor(n)*86400000);
+  return ncKey(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate());
+}
+// Any date-ish cell → "YYYY-MM-DD" (or null). Time-only values (0 … <1) and blanks → null.
+function ncDateKey(v){
+  if(v==null||v==='')return null;
+  if(v instanceof Date)return isNaN(v)?null:ncKey(v.getFullYear(),v.getMonth()+1,v.getDate());
+  if(typeof v==='number')return v>=20000?ncSerialToKey(v):null;
+  var s=String(v).trim(),m;
+  if(!s)return null;
+  if((m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/)))return ncKey(+m[1],+m[2],+m[3]);
+  if((m=s.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})/))){var a=ncMonthIdx(m[1]);return a?ncKey(+m[3],a,+m[2]):null;}
+  if((m=s.match(/^(\d{1,2})[\s\-]([A-Za-z]{3,9})\.?,?[\s\-]+(\d{4})/))){var b=ncMonthIdx(m[2]);return b?ncKey(+m[3],b,+m[1]):null;}
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))){
+    var p=+m[1],q=+m[2],y=+m[3];if(y<100)y+=2000;
+    if(p>12){var t=p;p=q;q=t;}
+    return ncKey(y,p,q);
+  }
+  if(/^\d{5}(\.\d+)?$/.test(s))return ncSerialToKey(parseFloat(s));
+  var ts=Date.parse(s);
+  if(!isNaN(ts)){var d=new Date(ts);return ncKey(d.getFullYear(),d.getMonth()+1,d.getDate());}
+  return null;
+}
+
+// find the header row (within the first 30 rows) that contains every needed column name
+function ncHeaderRow(rows,need){
+  for(var i=0;i<Math.min(rows.length,30);i++){
+    var r=rows[i]||[],map={};
+    for(var j=0;j<r.length;j++){var k=ncNorm(r[j]);if(k&&!(k in map))map[k]=j;}
+    var ok=true;for(var n=0;n<need.length;n++){if(!(need[n] in map)){ok=false;break;}}
+    if(ok)return {i:i,map:map};
+  }
+  return null;
+}
+function ncDetect(rows){
+  if(ncHeaderRow(rows,['TENDER TYPE','MULTI TENDER AMOUNT']))return 'pos';
+  if(ncHeaderRow(rows,['UPDATED ON','CATEGORY','STATUS','AMOUNT']))return 'gf';
+  if(ncHeaderRow(rows,['GROSS ORDER VALUE','CREATED AT','STATUS']))return 'tiktok';
+  if(ncHeaderRow(rows,['DATE','ORDERS','CANCELLED','SALES']))return 'panda';
+  return null;
+}
+// how many dated rows fall in each month (used to auto-pick the month of an upload)
+function ncMonthCounts(kind,rows){
+  var spec={pos:[['TENDER TYPE','MULTI TENDER AMOUNT'],'DATE'],gf:[['UPDATED ON','CATEGORY','STATUS','AMOUNT'],'UPDATED ON'],
+            tiktok:[['GROSS ORDER VALUE','CREATED AT','STATUS'],'CREATED AT'],panda:[['DATE','ORDERS','CANCELLED','SALES'],'DATE']}[kind];
+  var h=ncHeaderRow(rows,spec[0]),out={};
+  if(!h)return out;
+  var c=h.map[spec[1]]!=null?h.map[spec[1]]:0;
+  for(var i=h.i+1;i<rows.length;i++){var dk=ncDateKey((rows[i]||[])[c]);if(dk){var m=dk.slice(0,7);out[m]=(out[m]||0)+1;}}
+  return out;
+}
+
+// ── POS "NON CASH SUMMARY REPORT" ────────────────────────────
+function ncParsePOS(rows,month){
+  var h=ncHeaderRow(rows,['TENDER TYPE','MULTI TENDER AMOUNT']);if(!h)return null;
+  var M=h.map,cD=M['DATE']!=null?M['DATE']:0,cT=M['TENDER TYPE'],cC=M['VALIDATION CODE'],cR=M['REFERENCE CODE'],cA=M['MULTI TENDER AMOUNT'];
+  var cur=null,all=[],i,r,dk;
+  for(i=h.i+1;i<rows.length;i++){
+    r=rows[i]||[];dk=ncDateKey(r[cD]);if(dk)cur=dk;if(!cur)continue;   // date is filled down, like the LOOKUP in the sheet
+    var t=ncNorm(r[cT]),ref=String(r[cR]==null?'':r[cR]).trim(),amt=ncNum(r[cA]);
+    if(!t&&!ref&&!amt)continue;
+    all.push({d:cur,t:t,code:ncNorm(r[cC]),ref:ref,rk:ref.toUpperCase(),amt:amt});
+  }
+  var otherN=NC_OTHER.map(ncNorm),days={},maxDay=0,used=0;
+  function D(k){return days[k]||(days[k]={dc:[0,0],qr:[0,0],ot:NC_OTHER.map(function(){return 0;}),g:[0,0],p:[0,0],t:[0,0],del:[]});}
+  var rowsM=all.filter(function(x){return x.d.slice(0,7)===month;});
+  // offsetting pairs (same day, same ref, equal & opposite amount) – any tender
+  var offs={};
+  rowsM.forEach(function(x){var k=x.d+'|'+x.rk+'|'+x.amt.toFixed(2);offs[k]=(offs[k]||0)+1;});
+  var gG={},gP={};
+  rowsM.forEach(function(x){
+    used++;var day=D(x.d);maxDay=Math.max(maxDay,+x.d.slice(8));
+    if(x.t==='DEBIT CREDIT'){day.dc[0]+=x.amt;day.dc[1]++;}
+    else if(x.t==='QR PH'){day.qr[0]+=x.amt;day.qr[1]++;}
+    var oi=otherN.indexOf(x.t);if(oi>=0)day.ot[oi]+=x.amt;
+    // Grab (back-server): any row whose reference has BI#GF
+    if(x.rk.indexOf('BI#GF')>=0){
+      day.g[0]+=x.amt;
+      var gk=x.d+'|'+x.rk,g=gG[gk]||(gG[gk]={d:x.d,pos:0,neg:0});
+      if(x.amt>0)g.pos++;else if(x.amt<0)g.neg++;
+    }
+    // Foodpanda (back-server): validation code B272
+    if(x.code==='B272'){
+      day.p[0]+=x.amt;
+      if(x.rk.indexOf('BI#')>=0){
+        var pk=x.d+'|'+x.rk,p=gP[pk]||(gP[pk]={d:x.d,pos:0,neg:0});
+        if(x.amt>0)p.pos++;else if(x.amt<0)p.neg++;
+      }else day.p[1]++;
+    }
+    // TikTok (back-server): validation code B347
+    if(x.code==='B347'){
+      day.t[0]+=x.amt;
+      if(x.amt!==0&&(!x.rk||offs[x.d+'|'+x.rk+'|'+(-x.amt).toFixed(2)]==null))day.t[1]++;
+    }
+    if(x.code==='B267'||x.code==='B272'||x.code==='B347')day.del.push({r:x.ref,a:ncR2(x.amt),c:x.code});
+  });
+  Object.keys(gG).forEach(function(k){var g=gG[k];days[g.d].g[1]+=Math.max(0,g.pos-g.neg);});
+  Object.keys(gP).forEach(function(k){var g=gP[k];days[g.d].p[1]+=Math.max(0,g.pos-g.neg);});
+  Object.keys(days).forEach(function(k){var d=days[k];
+    d.dc[0]=ncR2(d.dc[0]);d.qr[0]=ncR2(d.qr[0]);d.g[0]=ncR2(d.g[0]);d.p[0]=ncR2(d.p[0]);d.t[0]=ncR2(d.t[0]);
+    d.ot=d.ot.map(ncR2);});
+  return {kind:'pos',days:days,maxDay:maxDay,used:used,total:all.length};
+}
+
+// ── GrabFood portal export ───────────────────────────────────
+function ncParseGF(rows,month){
+  var h=ncHeaderRow(rows,['UPDATED ON','CATEGORY','STATUS','AMOUNT']);if(!h)return null;
+  var M=h.map,cU=M['UPDATED ON'],cCat=M['CATEGORY'],cS=M['STATUS'],cA=M['AMOUNT'],cOT=M['ORDER TYPE'];
+  var days={},maxDay=0,used=0,total=0;
+  for(var i=h.i+1;i<rows.length;i++){
+    var r=rows[i]||[],dk=ncDateKey(r[cU]);if(!dk)continue;total++;
+    if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
+    var d=days[dk]||(days[dk]=[0,0]);
+    if(cOT==null||ncNorm(r[cOT])!=='MANUALLY PAID')d[0]+=ncNum(r[cA]);
+    if(ncNorm(r[cS])!=='CANCELLED'&&ncNorm(r[cCat]).indexOf('PAYMENT')===0)d[1]++;
+  }
+  Object.keys(days).forEach(function(k){days[k][0]=ncR2(days[k][0]);});
+  return {kind:'gf',days:days,maxDay:maxDay,used:used,total:total};
+}
+// ── Foodpanda daily report ───────────────────────────────────
+function ncParsePanda(rows,month){
+  var h=ncHeaderRow(rows,['DATE','ORDERS','CANCELLED','SALES']);if(!h)return null;
+  var M=h.map,days={},maxDay=0,used=0,total=0;
+  for(var i=h.i+1;i<rows.length;i++){
+    var r=rows[i]||[],dk=ncDateKey(r[M['DATE']]);if(!dk)continue;total++;
+    if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
+    days[dk]=[ncR2(ncNum(r[M['SALES']])),ncNum(r[M['ORDERS']])];
+  }
+  return {kind:'panda',days:days,maxDay:maxDay,used:used,total:total};
+}
+// ── TikTok orders export (DELIVERED only) ────────────────────
+function ncParseTT(rows,month){
+  var h=ncHeaderRow(rows,['GROSS ORDER VALUE','CREATED AT','STATUS']);if(!h)return null;
+  var M=h.map,cN=M['NET ORDER VALUE']!=null?M['NET ORDER VALUE']:M['GROSS ORDER VALUE'];
+  var days={},maxDay=0,used=0,total=0;
+  for(var i=h.i+1;i<rows.length;i++){
+    var r=rows[i]||[],dk=ncDateKey(r[M['CREATED AT']]);if(!dk)continue;total++;
+    if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
+    var d=days[dk]||(days[dk]=[0,0]);
+    if(ncNorm(r[M['STATUS']])==='DELIVERED'){d[0]+=ncNum(r[cN]);d[1]++;}
+  }
+  Object.keys(days).forEach(function(k){days[k][0]=ncR2(days[k][0]);});
+  return {kind:'tiktok',days:days,maxDay:maxDay,used:used,total:total};
+}
+
+// ── state helpers ────────────────────────────────────────────
+function ncNewState(month){return {month:month,days:{},src:{},updatedMs:0};}
+function ncBlankDay(){return {pos:null,maya:null,grab:{p:null,s:null},panda:{p:null,s:null},tt:{p:null,s:null},del:[],rem:{grab:'',panda:'',tt:''}};}
+function ncDay(state,k){
+  var d=state.days[k]||(state.days[k]=ncBlankDay());
+  d.grab=d.grab||{p:null,s:null};d.panda=d.panda||{p:null,s:null};d.tt=d.tt||{p:null,s:null};
+  d.rem=d.rem||{grab:'',panda:'',tt:''};d.del=d.del||[];
+  return d;
+}
+// merge a parsed file into the month state – only days 1…maxDay of that file are touched
+function ncApply(state,res,month){
+  var ym=month.split('-'),y=+ym[0],m=+ym[1];
+  for(var d=1;d<=res.maxDay;d++){
+    var k=ncKey(y,m,d),rec=ncDay(state,k),x=res.days[k];
+    if(res.kind==='pos'){
+      rec.pos=x?{dc:x.dc,qr:x.qr,ot:x.ot}:{dc:[0,0],qr:[0,0],ot:NC_OTHER.map(function(){return 0;})};
+      rec.grab.s=x?x.g:[0,0];rec.panda.s=x?x.p:[0,0];rec.tt.s=x?x.t:[0,0];rec.del=x?x.del:[];
+    }else if(res.kind==='gf')rec.grab.p=x||[0,0];
+    else if(res.kind==='panda')rec.panda.p=x||[0,0];
+    else if(res.kind==='tiktok')rec.tt.p=x||[0,0];
+  }
+}
+// portal − server (null until both sides are loaded)
+function ncDisc(p,s){return(p&&s)?[ncR2(p[0]-s[0]),p[1]-s[1]]:null;}
+// POS references whose amount equals the sales discrepancy (the "ORDER ID" column)
+function ncOrderIds(rec,disc,codes){
+  if(!disc||!disc[0])return '';
+  var t=Math.abs(disc[0]),out=[];
+  (rec.del||[]).forEach(function(x){if(codes.indexOf(x.c)>=0&&Math.abs(x.a-t)<0.005&&x.r)out.push(x.r);});
+  return out.join(', ');
+}
+/* NC-ENGINE-END */
+
+// ── NON CASH TAB (UI) ────────────────────────────────────────
+var ncMonth=null, ncState=null, ncView='tenders', ncSaveTimer=null, ncReady=Promise.resolve();
+var NC_KINDS={pos:'POS Report',gf:'GrabFood',panda:'Foodpanda',tiktok:'TikTok'};
+var NC_AGG={
+  grab:{label:'GrabFood',codes:['B267','B272','B347']},
+  panda:{label:'Foodpanda',codes:['B267','B272','B347']},
+  tt:{label:'TikTok',codes:['B347']}
+};
+var NC_LS='rr_noncash_RR7024_';
+var NC_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var NC_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function ncEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function ncFmt(n,sign){
+  if(n==null||isNaN(n))return '—';
+  var a=Math.abs(n),s=a.toLocaleString('en-PH',{minimumFractionDigits:(a%1?2:0),maximumFractionDigits:2});
+  return (n<0?'−':(sign&&n>0?'+':''))+s;
+}
+function ncMonthLabel(m){var p=m.split('-');return NC_MON[+p[1]-1]+' '+p[0];}
+function ncDayLabel(k){var p=k.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);return NC_MON[+p[1]-1]+' '+(+p[2])+' · '+NC_DOW[d.getDay()];}
+function ncStatus(t,ok){var el=document.getElementById('nc-save-status');if(!el)return;el.textContent=t||'';el.style.color=(ok===false)?'#f87171':'';}
+
+// ── open / load / save ───────────────────────────────────────
+function ncOpen(){
+  if(!ncMonth){
+    var now=new Date();ncMonth=now.getFullYear()+'-'+ncPad(now.getMonth()+1);
+    ncState=ncNewState(ncMonth);
+    ncReady=ncLoad(ncMonth);
+  }
+  document.getElementById('nc-month').value=ncMonth;
+  ncRender();
+}
+function ncLocal(month){try{var r=localStorage.getItem(NC_LS+month);return r?JSON.parse(r):null;}catch(e){return null;}}
+async function ncLoad(month){
+  ncMonth=month;
+  var loc=ncLocal(month);
+  ncState=loc?Object.assign(ncNewState(month),loc):ncNewState(month);
+  var mi=document.getElementById('nc-month');if(mi)mi.value=month;
+  ncRender();
+  if(window.RRFB&&window.RRFB.loadNonCash){
+    try{
+      var remote=await window.RRFB.loadNonCash(month);
+      if(month!==ncMonth)return;
+      if(remote&&remote.days&&(remote.updatedMs||0)>=(ncState.updatedMs||0)){
+        ncState=Object.assign(ncNewState(month),remote);ncRender();ncStatus('☁ Loaded from Firebase');
+      }else ncStatus(loc?'Loaded':'');
+    }catch(e){console.warn('[NonCash] cloud load failed',e);ncStatus('Cloud unavailable – showing data saved on this device',false);}
+  }
+}
+function ncSetMonth(v){
+  if(!v||v===ncMonth)return;
+  ncFlush();
+  ncReady=ncLoad(v);
+}
+function ncPersist(){
+  if(!ncState)return;
+  ncState.updatedMs=Date.now();
+  ncStatus('Saving…');
+  clearTimeout(ncSaveTimer);ncSaveTimer=setTimeout(ncFlush,500);
+}
+async function ncFlush(){
+  clearTimeout(ncSaveTimer);ncSaveTimer=null;
+  if(!ncState)return;
+  var m=ncMonth,st=ncState;
+  try{localStorage.setItem(NC_LS+m,JSON.stringify(st));}catch(e){}
+  if(window.RRFB&&window.RRFB.saveNonCash){
+    try{await window.RRFB.saveNonCash(m,st);if(m===ncMonth)ncStatus('✓ Saved to Firebase');}
+    catch(e){console.warn('[NonCash] cloud save failed',e);if(m===ncMonth)ncStatus('Saved on this device only – publish the updated firestore.rules to sync',false);}
+  }else ncStatus('Saved on this device');
+}
+function ncClearMonth(){
+  if(!confirm('Clear all Non Cash data for '+ncMonthLabel(ncMonth)+'?'))return;
+  ncState=ncNewState(ncMonth);ncPersist();ncRender();ncShowNotes(['Month cleared.']);
+}
+
+// ── reading files ────────────────────────────────────────────
+function ncParseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  var first=text.split(/\r?\n/)[0]||'',delim=',';
+  var cnt={',':(first.match(/,/g)||[]).length,';':(first.match(/;/g)||[]).length,'\t':(first.match(/\t/g)||[]).length};
+  if(cnt[';']>cnt[delim])delim=';';if(cnt['\t']>cnt[delim])delim='\t';
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cur);cur='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';rows.push(row);row=[];}
+    else cur+=c;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+async function ncReadFile(f){
+  if(/\.(csv|txt|tsv)$/i.test(f.name)){return [{name:f.name,rows:ncParseCSV(await f.text())}];}
+  if(typeof XLSX==='undefined')throw new Error('Excel reader did not load – check your internet connection');
+  var wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+  return wb.SheetNames.map(function(n){return {name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})};});
+}
+async function ncIngest(kind,rows,fname,notes){
+  var counts=ncMonthCounts(kind,rows),keys=Object.keys(counts);
+  if(!keys.length){notes.push('⚠ '+fname+': no dated rows found');return;}
+  if(!counts[ncMonth]){
+    var best=keys.sort(function(a,b){return counts[b]-counts[a];})[0];
+    ncFlush();await ncLoad(best);
+    notes.push('Switched to '+ncMonthLabel(best)+' – the month found in '+fname);
+  }
+  var parse={pos:ncParsePOS,gf:ncParseGF,panda:ncParsePanda,tiktok:ncParseTT}[kind];
+  var res=parse(rows,ncMonth);
+  ncApply(ncState,res,ncMonth);
+  ncState.src[kind]={name:fname,maxDay:res.maxDay,rows:res.used,ms:Date.now()};
+  var skipped=res.total-res.used;
+  notes.push('✓ '+NC_KINDS[kind]+': '+res.used+' rows · days 1–'+res.maxDay+(skipped>0?' ('+skipped+' rows from other months ignored)':''));
+}
+async function ncHandleFiles(list){
+  var files=Array.prototype.slice.call(list||[]),notes=[];
+  if(!files.length)return;
+  await ncReady;
+  ncShowNotes(['Reading '+files.length+' file'+(files.length>1?'s':'')+'…']);
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    try{
+      var sheets=await ncReadFile(f),found=0;
+      for(var j=0;j<sheets.length;j++){
+        var kind=ncDetect(sheets[j].rows);if(!kind)continue;
+        found++;await ncIngest(kind,sheets[j].rows,sheets.length>1?f.name+' › '+sheets[j].name:f.name,notes);
+      }
+      if(!found)notes.push('⚠ '+f.name+': no POS / GrabFood / Foodpanda / TikTok table recognised');
+    }catch(e){console.error(e);notes.push('⚠ '+f.name+': '+e.message);}
+  }
+  ncPersist();ncRender();ncShowNotes(notes);
+}
+function ncShowNotes(list){
+  var el=document.getElementById('nc-notes');if(!el)return;
+  el.innerHTML=(list||[]).map(function(t){return '<div>'+ncEsc(t)+'</div>';}).join('');
+}
+
+// ── derived numbers ──────────────────────────────────────────
+function ncDaysShown(){
+  var p=ncMonth.split('-'),y=+p[0],m=+p[1],dim=new Date(y,m,0).getDate(),last=0;
+  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k];if(r&&(r.pos||r.grab.p||r.grab.s||r.panda.p||r.panda.s||r.tt.p||r.tt.s||r.maya))last=Math.max(last,+k.slice(8));});
+  var now=new Date();if(now.getFullYear()===y&&now.getMonth()+1===m)last=Math.max(last,now.getDate());
+  if(!last)last=dim;
+  var out=[];for(var d=1;d<=last;d++)out.push(ncKey(y,m,d));
+  return out;
+}
+function ncVar(rec){
+  if(!rec||!rec.pos||!rec.maya)return null;
+  var m=rec.maya,p=rec.pos;
+  return [ncR2(p.dc[0]+p.qr[0]-((m.dcS||0)+(m.qrS||0))),(p.dc[1]+p.qr[1])-((m.dcT||0)+(m.qrT||0))];
+}
+function ncVarHtml(v,i){
+  if(!v)return '<span class="nc-dim">—</span>';
+  return '<span class="'+(v[i]?'nc-neg':'nc-ok')+'">'+ncFmt(v[i],true)+'</span>';
+}
+function ncTenderTotals(){
+  var t={dcS:0,dcT:0,qrS:0,qrT:0,mdcS:0,mdcT:0,mqrS:0,mqrT:0,vS:0,vT:0,ot:NC_OTHER.map(function(){return 0;})};
+  ncDaysShown().forEach(function(k){
+    var r=ncState.days[k];if(!r)return;
+    if(r.pos){t.dcS+=r.pos.dc[0];t.dcT+=r.pos.dc[1];t.qrS+=r.pos.qr[0];t.qrT+=r.pos.qr[1];(r.pos.ot||[]).forEach(function(v,i){t.ot[i]+=v;});}
+    if(r.maya){t.mdcS+=r.maya.dcS||0;t.mdcT+=r.maya.dcT||0;t.mqrS+=r.maya.qrS||0;t.mqrT+=r.maya.qrT||0;}
+    var v=ncVar(r);if(v){t.vS+=v[0];t.vT+=v[1];}
+  });
+  t.vS=ncR2(t.vS);
+  return t;
+}
+function ncBadDays(key){
+  var n=0;
+  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k],d=r&&ncDisc(r[key].p,r[key].s);if(d&&(d[0]||d[1]))n++;});
+  return n;
+}
+
+// ── rendering ────────────────────────────────────────────────
+function ncSetView(v){ncView=v;ncRender();}
+function ncRender(){
+  if(!ncState)return;
+  var mi=document.getElementById('nc-month');if(mi&&mi.value!==ncMonth)mi.value=ncMonth;
+  // source chips
+  document.getElementById('nc-chips').innerHTML=Object.keys(NC_KINDS).map(function(k){
+    var s=ncState.src&&ncState.src[k];
+    return '<span class="nc-chip'+(s?' on':'')+'" title="'+ncEsc(s?s.name:'Not loaded for this month')+'">'+(s?'✓ ':'○ ')+NC_KINDS[k]+(s?' · to '+NC_MON[+ncMonth.slice(5)-1]+' '+s.maxDay:'')+'</span>';
+  }).join('');
+  // view switcher
+  var views=[['tenders','Tenders'],['grab','GrabFood'],['panda','Foodpanda'],['tt','TikTok']];
+  document.getElementById('nc-views').innerHTML=views.map(function(v){
+    var bad=v[0]==='tenders'?0:ncBadDays(v[0]);
+    return '<button class="nc-vbtn'+(ncView===v[0]?' active':'')+'" onclick="ncSetView(\''+v[0]+'\')">'+v[1]+(bad?'<span class="nc-badge">'+bad+'</span>':'')+'</button>';
+  }).join('');
+  var box=document.getElementById('nc-view');
+  if(ncView==='tenders')box.innerHTML=ncRenderTenders();
+  else box.innerHTML=ncRenderAgg(ncView);
+}
+function ncCell(n,dimZero){
+  if(n==null)return '<td class="nc-dim">—</td>';
+  return '<td'+(dimZero&&!n?' class="nc-dim"':'')+'>'+ncFmt(n)+'</td>';
+}
+function ncRenderTenders(){
+  var days=ncDaysShown(),t=ncTenderTotals(),h='';
+  var loaded=!!(ncState.src&&ncState.src.pos);
+  h+='<div class="nc-summary">'+(loaded?
+    '<b>'+ncMonthLabel(ncMonth)+'</b> · POS non-cash <b>₱'+ncFmt(ncR2(t.dcS+t.qrS))+'</b> · '+(t.dcT+t.qrT)+' TC'+
+    (t.mdcS||t.mqrS||t.mdcT||t.mqrT?' · variance vs Maya <b class="'+(t.vS||t.vT?'nc-neg':'nc-ok')+'">₱'+ncFmt(t.vS,true)+'</b>':' · enter the Maya device totals to see the variance')
+    :'Upload the POS “Non Cash Summary Report” to fill this in.')+'</div>';
+  // table 1: POS vs Maya
+  h+='<div class="section-label" style="padding-left:0">POS vs Maya device</div><div class="nc-scroll"><table class="nc-table"><thead>'+
+    '<tr><th class="nc-date" rowspan="2">Date</th><th colspan="4">POS transaction</th><th colspan="4">Maya device (type in)</th><th colspan="2">Variance</th></tr>'+
+    '<tr><th>D/C sales</th><th>TC</th><th>QR PH sales</th><th>TC</th><th>D/C sales</th><th>TC</th><th>QR sales</th><th>TC</th><th>Sales</th><th>TC</th></tr></thead><tbody>';
+  days.forEach(function(k){
+    var r=ncState.days[k],p=r&&r.pos,m=r&&r.maya,v=ncVar(r);
+    function inp(f){return '<td><input class="nc-in" inputmode="decimal" data-d="'+k+'" data-f="'+f+'" value="'+(m&&m[f]!=null?m[f]:'')+'" oninput="ncMaya(this)"></td>';}
+    h+='<tr><td class="nc-date">'+ncDayLabel(k)+'</td>'+
+      ncCell(p?p.dc[0]:null)+ncCell(p?p.dc[1]:null)+ncCell(p?p.qr[0]:null)+ncCell(p?p.qr[1]:null)+
+      inp('dcS')+inp('dcT')+inp('qrS')+inp('qrT')+
+      '<td id="nc-vs-'+k+'">'+ncVarHtml(v,0)+'</td><td id="nc-vt-'+k+'">'+ncVarHtml(v,1)+'</td></tr>';
+  });
+  h+='<tr class="nc-total"><td class="nc-date">Total</td><td>'+ncFmt(ncR2(t.dcS))+'</td><td>'+t.dcT+'</td><td>'+ncFmt(ncR2(t.qrS))+'</td><td>'+t.qrT+'</td>'+
+    '<td id="nc-t-mdcS">'+ncFmt(ncR2(t.mdcS))+'</td><td id="nc-t-mdcT">'+t.mdcT+'</td><td id="nc-t-mqrS">'+ncFmt(ncR2(t.mqrS))+'</td><td id="nc-t-mqrT">'+t.mqrT+'</td>'+
+    '<td id="nc-t-vS">'+ncFmt(t.vS,true)+'</td><td id="nc-t-vT">'+ncFmt(t.vT,true)+'</td></tr></tbody></table></div>';
+  // table 2: other tenders
+  h+='<div class="section-label" style="padding-left:0;margin-top:16px">Other tenders (sales)</div><div class="nc-scroll"><table class="nc-table"><thead><tr><th class="nc-date">Date</th>'+
+    NC_OTHER.map(function(n){return '<th>'+ncEsc(n)+'</th>';}).join('')+'</tr></thead><tbody>';
+  days.forEach(function(k){
+    var r=ncState.days[k],p=r&&r.pos;
+    h+='<tr><td class="nc-date">'+ncDayLabel(k)+'</td>'+NC_OTHER.map(function(n,i){return ncCell(p&&p.ot?p.ot[i]:null,true);}).join('')+'</tr>';
+  });
+  h+='<tr class="nc-total"><td class="nc-date">MTD</td>'+t.ot.map(function(v){return '<td>'+ncFmt(ncR2(v))+'</td>';}).join('')+'</tr></tbody></table></div>';
+  return h;
+}
+function ncRefreshTenders(){
+  var t=ncTenderTotals();
+  ncDaysShown().forEach(function(k){
+    var v=ncVar(ncState.days[k]),a=document.getElementById('nc-vs-'+k),b=document.getElementById('nc-vt-'+k);
+    if(a)a.innerHTML=ncVarHtml(v,0);if(b)b.innerHTML=ncVarHtml(v,1);
+  });
+  var set=function(id,x){var e=document.getElementById(id);if(e)e.innerHTML=x;};
+  set('nc-t-mdcS',ncFmt(ncR2(t.mdcS)));set('nc-t-mdcT',t.mdcT);set('nc-t-mqrS',ncFmt(ncR2(t.mqrS)));set('nc-t-mqrT',t.mqrT);
+  set('nc-t-vS',ncFmt(t.vS,true));set('nc-t-vT',ncFmt(t.vT,true));
+}
+function ncMaya(el){
+  var rec=ncDay(ncState,el.dataset.d),f=el.dataset.f;
+  var m=rec.maya||{dcS:null,dcT:null,qrS:null,qrT:null},s=el.value.replace(/[₱,\s]/g,'');
+  m[f]=(s===''||isNaN(parseFloat(s)))?null:parseFloat(s);
+  rec.maya=(m.dcS==null&&m.dcT==null&&m.qrS==null&&m.qrT==null)?null:m;
+  ncRefreshTenders();ncPersist();
+}
+function ncRem(el){
+  var rec=ncDay(ncState,el.dataset.d);rec.rem[el.dataset.k]=el.value;ncPersist();
+}
+function ncRenderAgg(key){
+  var cfg=NC_AGG[key],days=ncDaysShown(),h='',tot={ps:0,pt:0,ss:0,st:0,ds:0,dt:0},bad=0,anyP=false,anyS=false;
+  days.forEach(function(k){
+    var r=ncState.days[k];if(!r)return;
+    var p=r[key].p,s=r[key].s,d=ncDisc(p,s);
+    if(p){anyP=true;tot.ps+=p[0];tot.pt+=p[1];}
+    if(s){anyS=true;tot.ss+=s[0];tot.st+=s[1];}
+    if(d){tot.ds+=d[0];tot.dt+=d[1];if(d[0]||d[1])bad++;}
+  });
+  var srcName=key==='grab'?'GrabFood':key==='panda'?'Foodpanda':'TikTok';
+  var missing=[];if(!anyP)missing.push('the '+srcName+' portal export');if(!anyS)missing.push('the POS Non Cash report');
+  h+='<div class="nc-summary">'+(missing.length?'Upload '+missing.join(' and ')+' to compare.':
+    '<b>'+cfg.label+'</b> · '+(bad?'<b class="nc-neg">'+bad+' day'+(bad>1?'s':'')+' with a discrepancy</b> · net ₱'+ncFmt(ncR2(tot.ds),true)+' · '+ncFmt(tot.dt,true)+' TC':'<b class="nc-ok">No discrepancies</b> for the days loaded'))+'</div>';
+  h+='<div class="nc-scroll"><table class="nc-table"><thead><tr><th class="nc-date">Date</th><th>Portal sales</th><th>Portal TC</th><th>Server sales</th><th>Server TC</th><th>Disc. sales</th><th>Disc. TC</th><th>Order ID</th><th>Remarks</th></tr></thead><tbody>';
+  days.forEach(function(k){
+    var r=ncState.days[k]||ncBlankDay(),p=r[key].p,s=r[key].s,d=ncDisc(p,s),isBad=d&&(d[0]||d[1]);
+    h+='<tr'+(isBad?' class="nc-bad"':'')+'><td class="nc-date">'+ncDayLabel(k)+'</td>'+
+      ncCell(p?p[0]:null)+ncCell(p?p[1]:null)+ncCell(s?s[0]:null)+ncCell(s?s[1]:null)+
+      '<td>'+ncVarHtml(d,0)+'</td><td>'+ncVarHtml(d,1)+'</td>'+
+      '<td class="nc-ids">'+ncEsc(ncOrderIds(r,d,cfg.codes))+'</td>'+
+      '<td class="nc-left"><input class="nc-rem" data-d="'+k+'" data-k="'+key+'" value="'+ncEsc(r.rem[key]||'')+'" placeholder="remarks" oninput="ncRem(this)"></td></tr>';
+  });
+  h+='<tr class="nc-total"><td class="nc-date">Total</td><td>'+(anyP?ncFmt(ncR2(tot.ps)):'—')+'</td><td>'+(anyP?tot.pt:'—')+'</td><td>'+(anyS?ncFmt(ncR2(tot.ss)):'—')+'</td><td>'+(anyS?tot.st:'—')+'</td>'+
+    '<td>'+ncVarHtml(anyP&&anyS?[ncR2(tot.ds),tot.dt]:null,0)+'</td><td>'+ncVarHtml(anyP&&anyS?[ncR2(tot.ds),tot.dt]:null,1)+'</td><td></td><td></td></tr></tbody></table></div>';
+  return h;
+}
+
+// drag & drop onto the upload box
+(function(){
+  var z=document.getElementById('nc-drop');if(!z)return;
+  ['dragenter','dragover'].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.remove('drag');});});
+  z.addEventListener('drop',function(e){if(e.dataTransfer&&e.dataTransfer.files)ncHandleFiles(e.dataTransfer.files);});
+})();
+// once Firebase is ready, pull the cloud copy of the open month (unless a save is pending)
+window.addEventListener('rr-firebase-ready',function(){if(ncMonth&&!ncSaveTimer)ncReady=ncLoad(ncMonth);});
 </script>
 <script type="module">
   import './firebase-sync.js';
