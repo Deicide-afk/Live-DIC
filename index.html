@@ -314,6 +314,27 @@ input.nc-rem{width:170px;background:transparent;border:1px solid var(--border);b
 input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
 .nc-foot{margin-top:18px;text-align:right}
 .nc-foot button{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:.7rem;cursor:pointer;font-family:var(--font)}
+
+/* PMF */
+.pmf-wrap{padding:12px 12px 90px;max-width:1150px;margin:0 auto}
+.pmf-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pmf-btn{padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem;font-weight:700;cursor:pointer;font-family:var(--font)}
+.pmf-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.pmf-btn:hover{border-color:var(--accent2)}
+#pmf-status{font-size:.7rem;color:var(--muted);margin-left:4px}
+.pmf-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:#fff}
+.pmf-search{margin:4px 0 10px}
+.pmf-search input{width:100%;max-width:380px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:.8rem;font-family:var(--font)}
+.pmf-item{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.pmf-item-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.82rem}
+.pmf-item-top span{color:var(--muted);font-size:.72rem}
+.pmf-item-sub{font-size:.72rem;color:var(--muted);margin-top:3px}
+.pmf-item-actions{display:flex;gap:6px}
+.pmf-item-actions button{padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.7rem;font-weight:700;cursor:pointer;font-family:var(--font)}
+.pmf-item-actions button.danger{color:#f87171}
+.pmf-chip{border:1px solid var(--border);border-radius:99px;padding:1px 8px;font-size:.62rem!important}
+.pmf-chip.warn{color:#f5a623!important;border-color:#f5a623}
+.pmf-empty{font-size:.78rem;color:var(--muted);padding:14px;border:1px dashed var(--border);border-radius:12px;text-align:center}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -357,6 +378,7 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
     <button class="sub-btn" id="sub-btn-products" onclick="switchTab('products')">Manage Products</button>
     <button class="sub-btn" id="sub-btn-mtdvar" onclick="switchTab('mtdvar')">MTD Var</button>
     <button class="sub-btn" id="sub-btn-ydic" onclick="switchTab('ydic')">Yesterday's DIC</button>
+    <button class="sub-btn" id="sub-btn-pmf" onclick="switchTab('pmf')">PMF</button>
   </div>
   <!-- SALES sub-tabs -->
   <div class="sub-tabs" id="sub-sales" style="display:none">
@@ -543,6 +565,22 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
     </div>
   </div>
 
+  <!-- PMF TAB -->
+  <div id="tab-pmf" class="tab-content">
+    <div class="pmf-wrap">
+      <div class="pmf-toolbar">
+        <button class="pmf-btn" onclick="pmfNew()">＋ New</button>
+        <button class="pmf-btn primary" onclick="pmfSave()">💾 Save</button>
+        <button class="pmf-btn" onclick="pmfPrint()">🖨 Print / PDF</button>
+        <span id="pmf-status"></span>
+      </div>
+      <div class="pmf-scroll"><div id="pmf-paper-host"></div></div>
+      <div class="section-label" style="padding-left:0;margin-top:18px">Saved forms</div>
+      <div class="pmf-search"><input id="pmf-search" placeholder="Search PMF no., to, from, item…" oninput="pmfRenderList()"></div>
+      <div id="pmf-list"></div>
+    </div>
+  </div>
+
   <!-- NON CASH TAB -->
   <div id="tab-noncash" class="tab-content">
     <div class="nc-wrap">
@@ -553,7 +591,7 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
       <label class="nc-drop" id="nc-drop" for="nc-files">
         <input type="file" id="nc-files" multiple accept=".xlsx,.xls,.csv,.txt,.tsv" hidden onchange="ncHandleFiles(this.files);this.value=''">
         <div class="nc-drop-title">📥 Upload exports</div>
-        <div class="nc-drop-sub">POS Non Cash Summary Report · GrabFood · Foodpanda · TikTok — or your whole monthly workbook. Files are recognised automatically and only the days they contain get updated.</div>
+        <div class="nc-drop-sub">POS Non Cash Summary Report · GrabFood · Foodpanda order details (+ daily report for FPAO) · TikTok — or your whole monthly workbook. Files are recognised automatically and only the days they contain get updated.</div>
       </label>
       <div class="nc-chips" id="nc-chips"></div>
       <div class="nc-notes" id="nc-notes"></div>
@@ -908,7 +946,7 @@ const BREAD_PRODUCTS = [
   {group:'CAKE SLICES'},
   {code:'CCS',     cutoff:'-3 days'},{code:'CHCS',    cutoff:'-2 days'},
   {code:'CPBCS',   cutoff:'-2 days'},{code:'DDC SLC', cutoff:'-2 days'},
-  {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},{code:'RVCS', cutoff:'-2 days'},
+  {code:'MMC SLC', cutoff:'-2 days'},{code:'UMC SLC', cutoff:'-2 days'},
   {group:'MOIST'},
   {code:'BCR-S',   cutoff:'-2 days'},{code:'BCRLF',   cutoff:'-2 days'},
   {code:'MC-S',    cutoff:'-2 days'},{code:'MC-L',    cutoff:'-2 days'},
@@ -1614,7 +1652,7 @@ async function clearDailyCheckerMonth(){
 
 
 // ── TAB SWITCH ───────────────────────────────────────────────
-const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic'];
+const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic','pmf'];
 const SALES_SUBS=['sales','dailychecker','noncash'];
 function switchMain(main){
   ['dic','sales','print','weekly'].forEach(m=>{
@@ -1659,6 +1697,7 @@ function switchTab(name){
   }
   if(name==='dailychecker')loadDailyCheckerMonth(dailyCheckerMonth);
   if(name==='noncash'&&typeof ncOpen==='function')ncOpen();
+  if(name==='pmf'&&typeof pmfOpen==='function')pmfOpen();
   if(name==='count') refreshCountVariances();
 }
 
@@ -3482,13 +3521,14 @@ function ncDetect(rows){
   if(ncHeaderRow(rows,['TENDER TYPE','MULTI TENDER AMOUNT']))return 'pos';
   if(ncHeaderRow(rows,['UPDATED ON','CATEGORY','STATUS','AMOUNT']))return 'gf';
   if(ncHeaderRow(rows,['GROSS ORDER VALUE','CREATED AT','STATUS']))return 'tiktok';
-  if(ncHeaderRow(rows,['DATE','ORDERS','CANCELLED','SALES']))return 'panda';
+  if(ncHeaderRow(rows,['ORDER ID','ORDER RECEIVED AT','SUBTOTAL']))return 'panda';
+  if(ncHeaderRow(rows,['DATE','ORDERS','CANCELLED','SALES']))return 'pandad';
   return null;
 }
 // how many dated rows fall in each month (used to auto-pick the month of an upload)
 function ncMonthCounts(kind,rows){
   var spec={pos:[['TENDER TYPE','MULTI TENDER AMOUNT'],'DATE'],gf:[['UPDATED ON','CATEGORY','STATUS','AMOUNT'],'UPDATED ON'],
-            tiktok:[['GROSS ORDER VALUE','CREATED AT','STATUS'],'CREATED AT'],panda:[['DATE','ORDERS','CANCELLED','SALES'],'DATE']}[kind];
+            tiktok:[['GROSS ORDER VALUE','CREATED AT','STATUS'],'CREATED AT'],panda:[['ORDER ID','ORDER RECEIVED AT','SUBTOTAL'],'ORDER RECEIVED AT'],pandad:[['DATE','ORDERS','CANCELLED','SALES'],'DATE']}[kind];
   var h=ncHeaderRow(rows,spec[0]),out={};
   if(!h)return out;
   var c=h.map[spec[1]]!=null?h.map[spec[1]]:0;
@@ -3549,22 +3589,28 @@ function ncParsePOS(rows,month){
 }
 
 // ── GrabFood portal export ───────────────────────────────────
+//   main view: grouped by "Updated On"  ·  GAO view: same rules, grouped by "Created On" (the day the order was placed)
 function ncParseGF(rows,month){
   var h=ncHeaderRow(rows,['UPDATED ON','CATEGORY','STATUS','AMOUNT']);if(!h)return null;
-  var M=h.map,cU=M['UPDATED ON'],cCat=M['CATEGORY'],cS=M['STATUS'],cA=M['AMOUNT'],cOT=M['ORDER TYPE'];
-  var days={},maxDay=0,used=0,total=0;
-  for(var i=h.i+1;i<rows.length;i++){
-    var r=rows[i]||[],dk=ncDateKey(r[cU]);if(!dk)continue;total++;
-    if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
-    var d=days[dk]||(days[dk]=[0,0]);
+  var M=h.map,cU=M['UPDATED ON'],cCr=M['CREATED ON'],cCat=M['CATEGORY'],cS=M['STATUS'],cA=M['AMOUNT'],cOT=M['ORDER TYPE'];
+  var days={},daysC={},maxDay=0,used=0,total=0;
+  function add(map,dk,r){
+    var d=map[dk]||(map[dk]=[0,0]);
     if(cOT==null||ncNorm(r[cOT])!=='MANUALLY PAID')d[0]+=ncNum(r[cA]);
     if(ncNorm(r[cS])!=='CANCELLED'&&ncNorm(r[cCat]).indexOf('PAYMENT')===0)d[1]++;
   }
-  Object.keys(days).forEach(function(k){days[k][0]=ncR2(days[k][0]);});
-  return {kind:'gf',days:days,maxDay:maxDay,used:used,total:total};
+  for(var i=h.i+1;i<rows.length;i++){
+    var r=rows[i]||[],dk=ncDateKey(r[cU]);if(!dk)continue;total++;
+    var ck=cCr!=null?ncDateKey(r[cCr]):null;
+    if(ck&&ck.slice(0,7)===month)add(daysC,ck,r);
+    if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
+    add(days,dk,r);
+  }
+  [days,daysC].forEach(function(m){Object.keys(m).forEach(function(k){m[k][0]=ncR2(m[k][0]);});});
+  return {kind:'gf',days:days,daysC:daysC,hasCreated:cCr!=null,maxDay:maxDay,used:used,total:total};
 }
-// ── Foodpanda daily report ───────────────────────────────────
-function ncParsePanda(rows,month){
+// ── Foodpanda daily report (Date / Orders / Cancelled / Sales) – feeds the FPAO view ──
+function ncParsePandaDaily(rows,month){
   var h=ncHeaderRow(rows,['DATE','ORDERS','CANCELLED','SALES']);if(!h)return null;
   var M=h.map,days={},maxDay=0,used=0,total=0;
   for(var i=h.i+1;i<rows.length;i++){
@@ -3572,6 +3618,28 @@ function ncParsePanda(rows,month){
     if(dk.slice(0,7)!==month)continue;used++;maxDay=Math.max(maxDay,+dk.slice(8));
     days[dk]=[ncR2(ncNum(r[M['SALES']])),ncNum(r[M['ORDERS']])];
   }
+  return {kind:'pandad',days:days,maxDay:maxDay,used:used,total:total};
+}
+// ── Foodpanda order details export (one row per order) ───────
+//   date = "Order received at" (col I) · amount = "Subtotal" (col V) · order id = col B
+//   rows with anything in "Cancellation reason" (col T) are ignored · "Is Payable" (col AB) is kept for later
+function ncParsePanda(rows,month){
+  var h=ncHeaderRow(rows,['ORDER ID','ORDER RECEIVED AT','SUBTOTAL']);if(!h)return null;
+  var M=h.map,cId=M['ORDER ID'],cD=M['ORDER RECEIVED AT'],cA=M['SUBTOTAL'];
+  var cT=M['CANCELLATION REASON']!=null?M['CANCELLATION REASON']:19;
+  var cP=M['IS PAYABLE']!=null?M['IS PAYABLE']:27;
+  var days={},maxDay=0,used=0,total=0;
+  for(var i=h.i+1;i<rows.length;i++){
+    var r=rows[i]||[],dk=ncDateKey(r[cD]);if(!dk)continue;total++;
+    if(dk.slice(0,7)!==month)continue;
+    used++;maxDay=Math.max(maxDay,+dk.slice(8));                 // file coverage counts every row, even cancelled ones
+    var d=days[dk]||(days[dk]={s:0,tc:0,o:[]});
+    if(String(r[cT]==null?'':r[cT]).trim()!=='')continue;         // ignore if column T has anything
+    var amt=ncNum(r[cA]);
+    d.s+=amt;d.tc++;
+    d.o.push({r:String(r[cId]==null?'':r[cId]).trim(),a:ncR2(amt),p:ncNorm(r[cP])==='YES'?1:0});
+  }
+  Object.keys(days).forEach(function(k){days[k].s=ncR2(days[k].s);});
   return {kind:'panda',days:days,maxDay:maxDay,used:used,total:total};
 }
 // ── TikTok orders export (DELIVERED only) ────────────────────
@@ -3591,11 +3659,11 @@ function ncParseTT(rows,month){
 
 // ── state helpers ────────────────────────────────────────────
 function ncNewState(month){return {month:month,days:{},src:{},updatedMs:0};}
-function ncBlankDay(){return {pos:null,maya:null,grab:{p:null,s:null},panda:{p:null,s:null},tt:{p:null,s:null},del:[],rem:{grab:'',panda:'',tt:''}};}
+function ncBlankDay(){return {pos:null,maya:null,grab:{p:null,s:null},panda:{p:null,s:null},tt:{p:null,s:null},del:[],pOrd:[],gao:null,fpao:null,rem:{grab:'',panda:'',tt:'',gao:'',fpao:''}};}
 function ncDay(state,k){
   var d=state.days[k]||(state.days[k]=ncBlankDay());
   d.grab=d.grab||{p:null,s:null};d.panda=d.panda||{p:null,s:null};d.tt=d.tt||{p:null,s:null};
-  d.rem=d.rem||{grab:'',panda:'',tt:''};d.del=d.del||[];
+  d.rem=d.rem||{grab:'',panda:'',tt:'',gao:'',fpao:''};if(d.gao===undefined)d.gao=null;if(d.fpao===undefined)d.fpao=null;d.del=d.del||[];d.pOrd=d.pOrd||[];
   return d;
 }
 // merge a parsed file into the month state – only days 1…maxDay of that file are touched
@@ -3606,8 +3674,9 @@ function ncApply(state,res,month){
     if(res.kind==='pos'){
       rec.pos=x?{dc:x.dc,qr:x.qr,ot:x.ot}:{dc:[0,0],qr:[0,0],ot:NC_OTHER.map(function(){return 0;})};
       rec.grab.s=x?x.g:[0,0];rec.panda.s=x?x.p:[0,0];rec.tt.s=x?x.t:[0,0];rec.del=x?x.del:[];
-    }else if(res.kind==='gf')rec.grab.p=x||[0,0];
-    else if(res.kind==='panda')rec.panda.p=x||[0,0];
+    }else if(res.kind==='gf'){rec.grab.p=x||[0,0];if(res.hasCreated)rec.gao=res.daysC[k]||[0,0];}
+    else if(res.kind==='pandad')rec.fpao=x||[0,0];
+    else if(res.kind==='panda'){rec.panda.p=x?[x.s,x.tc]:[0,0];rec.pOrd=x?x.o:[];}
     else if(res.kind==='tiktok')rec.tt.p=x||[0,0];
   }
 }
@@ -3620,16 +3689,28 @@ function ncOrderIds(rec,disc,codes){
   (rec.del||[]).forEach(function(x){if(codes.indexOf(x.c)>=0&&Math.abs(x.a-t)<0.005&&x.r)out.push(x.r);});
   return out.join(', ');
 }
+// Foodpanda Order ID: portal orders (same day) whose Subtotal equals the discrepancy amount
+function ncPortalOrderIds(rec,disc){
+  if(!disc||!disc[0])return '';
+  var t=Math.abs(disc[0]),out=[];
+  (rec.pOrd||[]).forEach(function(x){if(Math.abs(x.a-t)<0.005&&x.r)out.push(x.r);});
+  return out.join(', ');
+}
 /* NC-ENGINE-END */
 
 // ── NON CASH TAB (UI) ────────────────────────────────────────
 var ncMonth=null, ncState=null, ncView='tenders', ncSaveTimer=null, ncReady=Promise.resolve();
-var NC_KINDS={pos:'POS Report',gf:'GrabFood',panda:'Foodpanda',tiktok:'TikTok'};
+var NC_KINDS={pos:'POS Report',gf:'GrabFood',panda:'Foodpanda',pandad:'Foodpanda daily (FPAO)',tiktok:'TikTok'};
 var NC_AGG={
-  grab:{label:'GrabFood',codes:['B267','B272','B347']},
-  panda:{label:'Foodpanda',codes:['B267','B272','B347']},
-  tt:{label:'TikTok',codes:['B347']}
+  grab:{label:'GrabFood',codes:['B267','B272','B347'],p:function(r){return r.grab.p;},s:function(r){return r.grab.s;},src:'the GrabFood portal export'},
+  gao:{label:'Grab advance orders',codes:['B267','B272','B347'],p:function(r){return r.gao;},s:function(r){return r.grab.s;},src:'the GrabFood portal export (re-upload it once if this stays empty)',
+       note:'GAO counts Grab orders by the day they were <b>placed</b> (Created On), so advance orders show on the day they were ordered. It uses the same Grab file as the GrabFood tab.'},
+  panda:{label:'Foodpanda',codes:['B267','B272','B347'],p:function(r){return r.panda.p;},s:function(r){return r.panda.s;},src:'the Foodpanda order details'},
+  fpao:{label:'Foodpanda advance orders',codes:['B267','B272','B347'],p:function(r){return r.fpao;},s:function(r){return r.panda.s;},src:'the Foodpanda daily report (Date / Orders / Cancelled / Sales)',
+       note:'FPAO uses the Foodpanda <b>daily report</b>, which counts orders by the day they were <b>placed</b>, so advance orders show on the day they were ordered.'},
+  tt:{label:'TikTok',codes:['B347'],p:function(r){return r.tt.p;},s:function(r){return r.tt.s;},src:'the TikTok portal export'}
 };
+function ncSides(r,key){var c=NC_AGG[key];return {p:c.p(r)||null,s:c.s(r)||null};}
 var NC_LS='rr_noncash_RR7024_';
 var NC_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var NC_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3729,7 +3810,7 @@ async function ncIngest(kind,rows,fname,notes){
     ncFlush();await ncLoad(best);
     notes.push('Switched to '+ncMonthLabel(best)+' – the month found in '+fname);
   }
-  var parse={pos:ncParsePOS,gf:ncParseGF,panda:ncParsePanda,tiktok:ncParseTT}[kind];
+  var parse={pos:ncParsePOS,gf:ncParseGF,panda:ncParsePanda,pandad:ncParsePandaDaily,tiktok:ncParseTT}[kind];
   var res=parse(rows,ncMonth);
   ncApply(ncState,res,ncMonth);
   ncState.src[kind]={name:fname,maxDay:res.maxDay,rows:res.used,ms:Date.now()};
@@ -3749,7 +3830,7 @@ async function ncHandleFiles(list){
         var kind=ncDetect(sheets[j].rows);if(!kind)continue;
         found++;await ncIngest(kind,sheets[j].rows,sheets.length>1?f.name+' › '+sheets[j].name:f.name,notes);
       }
-      if(!found)notes.push('⚠ '+f.name+': no POS / GrabFood / Foodpanda / TikTok table recognised');
+      if(!found)notes.push('⚠ '+f.name+': no POS / GrabFood / Foodpanda (order details or daily report) / TikTok table recognised');
     }catch(e){console.error(e);notes.push('⚠ '+f.name+': '+e.message);}
   }
   ncPersist();ncRender();ncShowNotes(notes);
@@ -3762,7 +3843,7 @@ function ncShowNotes(list){
 // ── derived numbers ──────────────────────────────────────────
 function ncDaysShown(){
   var p=ncMonth.split('-'),y=+p[0],m=+p[1],dim=new Date(y,m,0).getDate(),last=0;
-  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k];if(r&&(r.pos||r.grab.p||r.grab.s||r.panda.p||r.panda.s||r.tt.p||r.tt.s||r.maya))last=Math.max(last,+k.slice(8));});
+  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k];if(r&&(r.pos||r.grab.p||r.grab.s||r.panda.p||r.panda.s||r.tt.p||r.tt.s||r.maya||r.fpao||r.gao))last=Math.max(last,+k.slice(8));});
   var now=new Date();if(now.getFullYear()===y&&now.getMonth()+1===m)last=Math.max(last,now.getDate());
   if(!last)last=dim;
   var out=[];for(var d=1;d<=last;d++)out.push(ncKey(y,m,d));
@@ -3790,7 +3871,7 @@ function ncTenderTotals(){
 }
 function ncBadDays(key){
   var n=0;
-  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k],d=r&&ncDisc(r[key].p,r[key].s);if(d&&(d[0]||d[1]))n++;});
+  Object.keys(ncState.days).forEach(function(k){var r=ncState.days[k],sd=r&&ncSides(r,key),d=sd&&ncDisc(sd.p,sd.s);if(d&&(d[0]||d[1]))n++;});
   return n;
 }
 
@@ -3805,7 +3886,7 @@ function ncRender(){
     return '<span class="nc-chip'+(s?' on':'')+'" title="'+ncEsc(s?s.name:'Not loaded for this month')+'">'+(s?'✓ ':'○ ')+NC_KINDS[k]+(s?' · to '+NC_MON[+ncMonth.slice(5)-1]+' '+s.maxDay:'')+'</span>';
   }).join('');
   // view switcher
-  var views=[['tenders','Tenders'],['grab','GrabFood'],['panda','Foodpanda'],['tt','TikTok']];
+  var views=[['tenders','Tenders'],['grab','GrabFood'],['gao','GAO'],['panda','Foodpanda'],['fpao','FPAO'],['tt','TikTok']];
   document.getElementById('nc-views').innerHTML=views.map(function(v){
     var bad=v[0]==='tenders'?0:ncBadDays(v[0]);
     return '<button class="nc-vbtn'+(ncView===v[0]?' active':'')+'" onclick="ncSetView(\''+v[0]+'\')">'+v[1]+(bad?'<span class="nc-badge">'+bad+'</span>':'')+'</button>';
@@ -3871,29 +3952,31 @@ function ncRem(el){
   var rec=ncDay(ncState,el.dataset.d);rec.rem[el.dataset.k]=el.value;ncPersist();
 }
 function ncRenderAgg(key){
-  var cfg=NC_AGG[key],days=ncDaysShown(),h='',tot={ps:0,pt:0,ss:0,st:0,ds:0,dt:0},bad=0,anyP=false,anyS=false;
+  var cfg=NC_AGG[key],fp=key==='panda',days=ncDaysShown(),h='',tot={ps:0,pt:0,ss:0,st:0,ds:0,dt:0},bad=0,anyP=false,anyS=false,anyB=false;
   days.forEach(function(k){
     var r=ncState.days[k];if(!r)return;
-    var p=r[key].p,s=r[key].s,d=ncDisc(p,s);
-    if(p){anyP=true;tot.ps+=p[0];tot.pt+=p[1];}
-    if(s){anyS=true;tot.ss+=s[0];tot.st+=s[1];}
-    if(d){tot.ds+=d[0];tot.dt+=d[1];if(d[0]||d[1])bad++;}
+    var sd=ncSides(r,key),p=sd.p,s=sd.s,d=ncDisc(p,s);
+    if(p)anyP=true;
+    if(s)anyS=true;
+    if(d){anyB=true;tot.ps+=p[0];tot.pt+=p[1];tot.ss+=s[0];tot.st+=s[1];tot.ds+=d[0];tot.dt+=d[1];if(d[0]||d[1])bad++;}
   });
-  var srcName=key==='grab'?'GrabFood':key==='panda'?'Foodpanda':'TikTok';
-  var missing=[];if(!anyP)missing.push('the '+srcName+' portal export');if(!anyS)missing.push('the POS Non Cash report');
+  var missing=[];if(!anyP)missing.push(cfg.src);if(!anyS)missing.push('the POS Non Cash report');
   h+='<div class="nc-summary">'+(missing.length?'Upload '+missing.join(' and ')+' to compare.':
     '<b>'+cfg.label+'</b> · '+(bad?'<b class="nc-neg">'+bad+' day'+(bad>1?'s':'')+' with a discrepancy</b> · net ₱'+ncFmt(ncR2(tot.ds),true)+' · '+ncFmt(tot.dt,true)+' TC':'<b class="nc-ok">No discrepancies</b> for the days loaded'))+'</div>';
-  h+='<div class="nc-scroll"><table class="nc-table"><thead><tr><th class="nc-date">Date</th><th>Portal sales</th><th>Portal TC</th><th>Server sales</th><th>Server TC</th><th>Disc. sales</th><th>Disc. TC</th><th>Order ID</th><th>Remarks</th></tr></thead><tbody>';
+  if(cfg.note)h+='<div class="nc-notes" style="margin:-4px 0 8px">'+cfg.note+'</div>';
+  h+='<div class="nc-scroll"><table class="nc-table"><thead><tr><th class="nc-date">Date</th><th>Portal sales</th><th>Portal TC</th>'+(fp?'<th>Payable</th>':'')+'<th>Server sales</th><th>Server TC</th><th>Disc. sales</th><th>Disc. TC</th><th>POS Order ID</th>'+(fp?'<th>Foodpanda Order ID</th>':'')+'<th>Remarks</th></tr></thead><tbody>';
   days.forEach(function(k){
-    var r=ncState.days[k]||ncBlankDay(),p=r[key].p,s=r[key].s,d=ncDisc(p,s),isBad=d&&(d[0]||d[1]);
+    var r=ncState.days[k]||ncBlankDay(),sd=ncSides(r,key),p=sd.p,s=sd.s,d=ncDisc(p,s),isBad=d&&(d[0]||d[1]);
     h+='<tr'+(isBad?' class="nc-bad"':'')+'><td class="nc-date">'+ncDayLabel(k)+'</td>'+
-      ncCell(p?p[0]:null)+ncCell(p?p[1]:null)+ncCell(s?s[0]:null)+ncCell(s?s[1]:null)+
+      ncCell(p?p[0]:null)+ncCell(p?p[1]:null)+(fp?'<td class="nc-dim">—</td>':'')+ncCell(s?s[0]:null)+ncCell(s?s[1]:null)+
       '<td>'+ncVarHtml(d,0)+'</td><td>'+ncVarHtml(d,1)+'</td>'+
       '<td class="nc-ids">'+ncEsc(ncOrderIds(r,d,cfg.codes))+'</td>'+
+      (fp?'<td class="nc-ids">'+ncEsc(ncPortalOrderIds(r,d))+'</td>':'')+
       '<td class="nc-left"><input class="nc-rem" data-d="'+k+'" data-k="'+key+'" value="'+ncEsc(r.rem[key]||'')+'" placeholder="remarks" oninput="ncRem(this)"></td></tr>';
   });
-  h+='<tr class="nc-total"><td class="nc-date">Total</td><td>'+(anyP?ncFmt(ncR2(tot.ps)):'—')+'</td><td>'+(anyP?tot.pt:'—')+'</td><td>'+(anyS?ncFmt(ncR2(tot.ss)):'—')+'</td><td>'+(anyS?tot.st:'—')+'</td>'+
-    '<td>'+ncVarHtml(anyP&&anyS?[ncR2(tot.ds),tot.dt]:null,0)+'</td><td>'+ncVarHtml(anyP&&anyS?[ncR2(tot.ds),tot.dt]:null,1)+'</td><td></td><td></td></tr></tbody></table></div>';
+  h+='<tr class="nc-total"><td class="nc-date">Total*</td><td>'+(anyB?ncFmt(ncR2(tot.ps)):'—')+'</td><td>'+(anyB?tot.pt:'—')+'</td>'+(fp?'<td></td>':'')+'<td>'+(anyB?ncFmt(ncR2(tot.ss)):'—')+'</td><td>'+(anyB?tot.st:'—')+'</td>'+
+    '<td>'+ncVarHtml(anyB?[ncR2(tot.ds),tot.dt]:null,0)+'</td><td>'+ncVarHtml(anyB?[ncR2(tot.ds),tot.dt]:null,1)+'</td><td></td>'+(fp?'<td></td>':'')+'<td></td></tr></tbody></table></div>'+
+    '<div class="nc-notes">* Totals only count days that have both portal and POS data, so Portal − Server always equals the discrepancy total.</div>';
   return h;
 }
 
@@ -3906,6 +3989,239 @@ function ncRenderAgg(key){
 })();
 // once Firebase is ready, pull the cloud copy of the open month (unless a save is pending)
 window.addEventListener('rr-firebase-ready',function(){if(ncMonth&&!ncSaveTimer)ncReady=ncLoad(ncMonth);});
+</script>
+<script>
+// ── PMF · PRODUCT MOVEMENT FORM ──────────────────────────────
+const PMF_ROWS=19;
+const PMF_SIGN=[['prepared','PREPARED BY:'],['approved','APPROVED BY:'],['verified','VERIFIED BY:'],['delivered','DELIVERED BY:'],['received','RECEIVED BY:']];
+const PMF_LS_DRAFT='rr_pmf_draft', PMF_LS_SAVED='rr_pmf_saved';
+let pmfForm=null, pmfDirty=false, pmfDraftTimer=null, pmfBooted=false, pmfLastSync=0;
+
+// Shared by the on-screen form and the printed copy so both look the same.
+const PMF_PAPER_CSS=`
+.pmf-paper{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:11px;padding:14px 16px;width:100%;min-width:740px;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pmf-paper *{box-sizing:border-box}
+.pmf-top{display:flex;align-items:stretch;margin-bottom:12px}
+.pmf-logobox{width:25%;display:flex;align-items:center}
+.pmf-logo{max-width:150px;max-height:62px;object-fit:contain}
+.pmf-titlebox{flex:1;display:flex;border:2px solid #000;min-height:58px}
+.pmf-title{flex:1;display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:.02em;text-align:center;padding:0 6px}
+.pmf-meta{width:36%;border-left:2px solid #000;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:3px 6px}
+.pmf-mrow,.pmf-rrow{display:flex;align-items:flex-end;gap:6px}
+.pmf-mrow{font-size:10px}
+.pmf-mrow>span{width:46px;flex:none}
+.pmf-rrow>span{width:44px;flex:none}
+.pmf-line{flex:1;min-width:0;border-bottom:1px solid #000}
+.pmf-route{margin:0 0 10px 7%;width:42%;display:flex;flex-direction:column;gap:5px}
+.pmf-paper input{display:block;width:100%;min-width:0;border:0;border-radius:0;background:transparent;color:#000;font:inherit;padding:2px 3px;outline:none;box-shadow:none;-webkit-appearance:none;appearance:none}
+.pmf-paper input:focus{background:#fff6cc}
+.pmf-v{display:block;min-height:15px;padding:2px 3px;word-break:break-word}
+.pmf-table,.pmf-sign{width:100%;border-collapse:collapse;table-layout:fixed}
+.pmf-table th,.pmf-table td,.pmf-sign th,.pmf-sign td{border:1px solid #000;padding:0;text-align:center;font-weight:normal;vertical-align:middle}
+.pmf-table th{font-size:10px;padding:3px 2px;line-height:1.25}
+.pmf-table td{height:21px}
+.pmf-table td input,.pmf-table td .pmf-v,.pmf-sign td input,.pmf-sign td .pmf-v{text-align:center}
+.pmf-table td.l input,.pmf-table td.l .pmf-v{text-align:left}
+.pmf-sign{margin-top:-1px}
+.pmf-sign th{font-size:10px;height:20px}
+.pmf-sign td{height:22px}
+.pmf-sign tr.cap td{height:15px;font-size:8px}
+.pmf-mismatch{background:#fde68a}
+`;
+
+function pmfEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pmfToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function pmfFmtDate(iso){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?m[2]+'/'+m[3]+'/'+m[1]:(iso||'');}
+function pmfBlank(){
+  const items=[];for(let i=0;i<PMF_ROWS;i++)items.push({desc:'',code:'',tr:'',rc:'',rem:''});
+  const sign={};PMF_SIGN.forEach(function(s){sign[s[0]]={n:'',d:''};});
+  return {id:'',no:'',date:pmfToday(),to:'',from:'',items:items,note:'',sign:sign,updatedMs:0};
+}
+function pmfNormalize(f){
+  const b=pmfBlank(),o=Object.assign(b,f||{});
+  o.items=[];for(let i=0;i<PMF_ROWS;i++)o.items.push(Object.assign({desc:'',code:'',tr:'',rc:'',rem:''},(f&&f.items&&f.items[i])||{}));
+  o.sign={};PMF_SIGN.forEach(function(s){o.sign[s[0]]=Object.assign({n:'',d:''},(f&&f.sign&&f.sign[s[0]])||{});});
+  return o;
+}
+function pmfQtyDiff(it){
+  const a=parseFloat(it.tr),b=parseFloat(it.rc);
+  return it.tr!==''&&it.rc!==''&&!isNaN(a)&&!isNaN(b)&&a!==b;
+}
+function pmfNextNo(last){
+  const m=/^(.*?)(\d+)$/.exec(String(last||'').trim());
+  return m?m[1]+String(parseInt(m[2],10)+1).padStart(m[2].length,'0'):'';
+}
+function pmfLoadSaved(){try{return JSON.parse(localStorage.getItem(PMF_LS_SAVED)||'{}')||{};}catch(e){return {};}}
+function pmfStoreSaved(m){try{localStorage.setItem(PMF_LS_SAVED,JSON.stringify(m));}catch(e){}}
+function pmfLatestNo(){
+  const arr=Object.values(pmfLoadSaved()).filter(function(f){return f.no;}).sort(function(a,b){return (b.updatedMs||0)-(a.updatedMs||0);});
+  return arr.length?arr[0].no:'';
+}
+function pmfLogoSrc(){const i=document.querySelector('img[alt="Red Ribbon logo"]');return i?i.src:'';}
+function pmfStatus(t,ok){const el=document.getElementById('pmf-status');if(!el)return;el.textContent=t||'';el.style.color=(ok===false)?'#f87171':'';}
+
+// ── form markup (mode 'edit' = inputs, 'print' = plain text) ─
+function pmfFormHtml(f,mode){
+  const E=mode==='edit';
+  const cell=function(attrs,val,type){
+    return E?'<input type="'+(type||'text')+'" '+attrs+' value="'+pmfEsc(val)+'" oninput="pmfInput(this)" autocomplete="off">'
+            :'<span class="pmf-v">'+pmfEsc(type==='date'?pmfFmtDate(val):val)+'</span>';
+  };
+  const logo=pmfLogoSrc();
+  let h='<div class="pmf-paper"><div class="pmf-top"><div class="pmf-logobox">'+
+    (logo?'<img class="pmf-logo" alt="Red Ribbon" src="'+logo+'">':'<b style="font-size:18px;color:#c8102e">Red Ribbon</b>')+'</div>'+
+    '<div class="pmf-titlebox"><div class="pmf-title">PRODUCT MOVEMENT FORM</div><div class="pmf-meta">'+
+    '<div class="pmf-mrow"><span>PMF NO.</span><div class="pmf-line">'+cell('data-f="no"',f.no)+'</div></div>'+
+    '<div class="pmf-mrow"><span>DATE</span><div class="pmf-line">'+cell('data-f="date"',f.date,'date')+'</div></div>'+
+    '</div></div></div>'+
+    '<div class="pmf-route"><div class="pmf-rrow"><span>TO:</span><div class="pmf-line">'+cell('data-f="to"',f.to)+'</div></div>'+
+    '<div class="pmf-rrow"><span>FROM:</span><div class="pmf-line">'+cell('data-f="from"',f.from)+'</div></div></div>'+
+    '<table class="pmf-table"><colgroup><col style="width:23%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:32%"></colgroup>'+
+    '<thead><tr><th rowspan="2">PRODUCT/MATERIAL<br>DESCRIPTION</th><th rowspan="2">ITEM CODE</th><th colspan="2">QUANTITY</th><th rowspan="2">REMARKS</th></tr>'+
+    '<tr><th>TRANSFERRED</th><th>RECEIVED</th></tr></thead><tbody>';
+  f.items.forEach(function(it,i){
+    const a='data-i="'+i+'" data-f="';
+    h+='<tr><td class="l">'+cell(a+'desc"',it.desc)+'</td><td>'+cell(a+'code"',it.code)+'</td><td>'+cell(a+'tr"',it.tr)+'</td>'+
+       '<td id="pmf-rc-'+i+'"'+(E&&pmfQtyDiff(it)?' class="pmf-mismatch"':'')+'>'+cell(a+'rc"',it.rc)+'</td><td class="l">'+cell(a+'rem"',it.rem)+'</td></tr>';
+  });
+  h+='<tr><td colspan="5" class="l">'+cell('data-f="note"',f.note)+'</td></tr></tbody></table>'+
+    '<table class="pmf-sign"><colgroup>'+PMF_SIGN.map(function(){return '<col style="width:13%"><col style="width:7%">';}).join('')+'</colgroup>'+
+    '<tr>'+PMF_SIGN.map(function(s){return '<th colspan="2">'+s[1]+'</th>';}).join('')+'</tr>'+
+    '<tr>'+PMF_SIGN.map(function(s){return '<td>'+cell('data-s="'+s[0]+'" data-f="n"',f.sign[s[0]].n)+'</td><td>'+cell('data-s="'+s[0]+'" data-f="d"',f.sign[s[0]].d)+'</td>';}).join('')+'</tr>'+
+    '<tr class="cap">'+PMF_SIGN.map(function(){return '<td>NAME</td><td>DATE</td>';}).join('')+'</tr></table></div>';
+  return h;
+}
+function pmfRenderForm(){const host=document.getElementById('pmf-paper-host');if(host)host.innerHTML=pmfFormHtml(pmfForm,'edit');}
+
+// ── editing + draft ──────────────────────────────────────────
+function pmfInput(el){
+  const f=el.dataset.f;
+  if(el.dataset.s)pmfForm.sign[el.dataset.s][f]=el.value;
+  else if(el.dataset.i!=null&&el.dataset.i!==''){
+    const i=+el.dataset.i;pmfForm.items[i][f]=el.value;
+    if(f==='tr'||f==='rc'){const td=document.getElementById('pmf-rc-'+i);if(td)td.classList.toggle('pmf-mismatch',pmfQtyDiff(pmfForm.items[i]));}
+  }else pmfForm[f]=el.value;
+  pmfDirty=true;pmfStatus('Unsaved changes');
+  clearTimeout(pmfDraftTimer);pmfDraftTimer=setTimeout(pmfSaveDraft,400);
+}
+function pmfSaveDraft(){try{localStorage.setItem(PMF_LS_DRAFT,JSON.stringify({form:pmfForm,dirty:pmfDirty}));}catch(e){}}
+function pmfHasContent(f){
+  return !!(f.to||f.from||f.note||f.items.some(function(i){return i.desc||i.code||i.tr||i.rc||i.rem;}));
+}
+
+// ── open / new / save / saved list ───────────────────────────
+function pmfOpen(){
+  if(!pmfBooted){
+    pmfBooted=true;
+    const st=document.createElement('style');st.id='pmf-style';st.textContent=PMF_PAPER_CSS;document.head.appendChild(st);
+    let d=null;try{d=JSON.parse(localStorage.getItem(PMF_LS_DRAFT)||'null');}catch(e){}
+    if(d&&d.form){pmfForm=pmfNormalize(d.form);pmfDirty=!!d.dirty;}
+    else{pmfForm=pmfBlank();pmfForm.no=pmfNextNo(pmfLatestNo());}
+    pmfRenderForm();
+    pmfStatus(pmfDirty?'Unsaved changes (draft kept on this device)':'');
+  }
+  pmfRenderList();pmfSync();
+}
+function pmfNew(){
+  if(pmfDirty&&pmfHasContent(pmfForm)&&!confirm('Start a new form? Unsaved changes will be lost.'))return;
+  pmfForm=pmfBlank();pmfForm.no=pmfNextNo(pmfLatestNo());pmfDirty=false;
+  pmfSaveDraft();pmfRenderForm();pmfStatus('New form');
+}
+async function pmfSave(){
+  if(!pmfForm.id)pmfForm.id='pmf_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  pmfForm.updatedMs=Date.now();
+  const copy=JSON.parse(JSON.stringify(pmfForm)),m=pmfLoadSaved();
+  m[copy.id]=Object.assign({},copy,{_u:1});pmfStoreSaved(m);
+  pmfDirty=false;pmfSaveDraft();pmfRenderList();
+  if(window.RRFB&&window.RRFB.savePmf){
+    pmfStatus('☁ Saving…');
+    try{
+      await window.RRFB.savePmf(copy.id,copy);
+      const m2=pmfLoadSaved();if(m2[copy.id]){delete m2[copy.id]._u;pmfStoreSaved(m2);}
+      pmfRenderList();pmfStatus('✓ Saved to Firebase');
+    }catch(e){console.warn('[PMF] cloud save failed',e);pmfStatus('Saved on this device only – publish the updated firestore.rules to sync',false);}
+  }else pmfStatus('Saved on this device');
+}
+function pmfOpenSaved(id){
+  const f=pmfLoadSaved()[id];if(!f)return;
+  if(pmfDirty&&pmfHasContent(pmfForm)&&!confirm('Open this form? Unsaved changes will be lost.'))return;
+  pmfForm=pmfNormalize(JSON.parse(JSON.stringify(f)));delete pmfForm._u;pmfDirty=false;
+  pmfSaveDraft();pmfRenderForm();pmfStatus('Opened PMF '+(pmfForm.no||''));
+  const host=document.getElementById('pmf-paper-host');if(host)host.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pmfDuplicate(id){
+  const f=pmfLoadSaved()[id];if(!f)return;
+  if(pmfDirty&&pmfHasContent(pmfForm)&&!confirm('Duplicate into a new form? Unsaved changes will be lost.'))return;
+  const n=pmfNormalize(JSON.parse(JSON.stringify(f)));
+  delete n._u;n.id='';n.updatedMs=0;n.no=pmfNextNo(pmfLatestNo()||f.no);n.date=pmfToday();
+  n.items.forEach(function(i){i.rc='';});
+  PMF_SIGN.forEach(function(s){n.sign[s[0]]={n:'',d:''};});
+  pmfForm=n;pmfDirty=true;pmfSaveDraft();pmfRenderForm();pmfStatus('Duplicated – received quantities and signatures cleared');
+  const host=document.getElementById('pmf-paper-host');if(host)host.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function pmfDelete(id){
+  if(!confirm('Delete this saved PMF?'))return;
+  const m=pmfLoadSaved();delete m[id];pmfStoreSaved(m);
+  if(pmfForm&&pmfForm.id===id)pmfForm.id='';
+  pmfRenderList();
+  if(window.RRFB&&window.RRFB.deletePmf){
+    try{await window.RRFB.deletePmf(id);pmfStatus('Deleted');}
+    catch(e){console.warn('[PMF] cloud delete failed',e);pmfStatus('Deleted here – the cloud copy could not be removed',false);}
+  }else pmfStatus('Deleted');
+}
+function pmfRenderList(){
+  const host=document.getElementById('pmf-list');if(!host)return;
+  const q=((document.getElementById('pmf-search')||{}).value||'').trim().toLowerCase(),cloud=!!(window.RRFB&&window.RRFB.savePmf);
+  const arr=Object.values(pmfLoadSaved()).filter(function(f){
+    if(!q)return true;
+    return (f.no+' '+f.to+' '+f.from+' '+f.note+' '+(f.items||[]).map(function(i){return i.desc+' '+i.code;}).join(' ')).toLowerCase().indexOf(q)>=0;
+  }).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')||(b.updatedMs||0)-(a.updatedMs||0);});
+  if(!arr.length){host.innerHTML='<div class="pmf-empty">'+(q?'No saved forms match your search.':'No saved forms yet. Fill in the form above and press Save.')+'</div>';return;}
+  host.innerHTML=arr.map(function(f){
+    const n=(f.items||[]).filter(function(i){return i.desc||i.code||i.tr||i.rc;}).length,diff=(f.items||[]).some(pmfQtyDiff);
+    return '<div class="pmf-item"><div class="pmf-item-main"><div class="pmf-item-top"><b>PMF '+(f.no?pmfEsc(f.no):'(no number)')+'</b><span>'+pmfEsc(pmfFmtDate(f.date))+'</span>'+
+      (diff?'<span class="pmf-chip warn">qty mismatch</span>':'')+(cloud&&f._u?'<span class="pmf-chip">not synced</span>':'')+'</div>'+
+      '<div class="pmf-item-sub">'+pmfEsc(f.from||'—')+' → '+pmfEsc(f.to||'—')+' · '+n+' item'+(n===1?'':'s')+'</div></div>'+
+      '<div class="pmf-item-actions"><button onclick="pmfOpenSaved(\''+f.id+'\')">Open</button><button onclick="pmfDuplicate(\''+f.id+'\')">Duplicate</button><button class="danger" onclick="pmfDelete(\''+f.id+'\')">Delete</button></div></div>';
+  }).join('');
+}
+async function pmfSync(force){
+  if(!window.RRFB||!window.RRFB.listPmf)return;
+  if(!force&&Date.now()-pmfLastSync<60000)return;
+  pmfLastSync=Date.now();
+  let remote;try{remote=await window.RRFB.listPmf();}catch(e){console.warn('[PMF] cloud list failed',e);return;}
+  if(!remote)return;                       // Firebase not configured – leave local data alone
+  const local=pmfLoadSaved(),rmap={};
+  remote.forEach(function(r){rmap[r.id]=r;});
+  remote.forEach(function(r){const l=local[r.id];if(!l||(r.updatedMs||0)>(l.updatedMs||0))local[r.id]=pmfNormalize(r);});
+  for(const id of Object.keys(local)){
+    if(rmap[id])continue;
+    if(local[id]._u){try{const c=JSON.parse(JSON.stringify(local[id]));delete c._u;await window.RRFB.savePmf(id,c);delete local[id]._u;}catch(e){}}
+    else delete local[id];                 // was synced before, now gone from the cloud → deleted on another device
+  }
+  pmfStoreSaved(local);pmfRenderList();
+}
+window.addEventListener('rr-firebase-ready',function(){if(pmfBooted)pmfSync(true);});
+
+// ── print / save as PDF ──────────────────────────────────────
+function pmfPrintDoc(f){
+  return '<!doctype html><html><head><meta charset="utf-8"><title>PMF '+pmfEsc(f.no)+'</title><style>@page{size:letter landscape;margin:.4in}html,body{margin:0;background:#fff}'+
+    PMF_PAPER_CSS+'.pmf-paper{min-width:0!important;padding:0!important}</style></head><body>'+pmfFormHtml(f,'print')+'</body></html>';
+}
+function pmfPrint(){
+  const html=pmfPrintDoc(pmfForm);
+  const old=document.getElementById('pmf-print-frame');if(old)old.remove();
+  const fr=document.createElement('iframe');
+  fr.id='pmf-print-frame';fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(fr);
+  fr.onload=function(){
+    setTimeout(function(){
+      try{fr.contentWindow.focus();fr.contentWindow.print();}
+      catch(e){const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.onload=function(){w.print();};}}
+    },200);
+  };
+  fr.srcdoc=html;
+}
 </script>
 <script type="module">
   import './firebase-sync.js';

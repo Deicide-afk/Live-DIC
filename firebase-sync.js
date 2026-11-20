@@ -4,7 +4,10 @@ import {
   doc,
   getDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  getDocs,
+  deleteDoc
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -147,5 +150,19 @@ async function saveNonCash(month, state) {
   if (!CONFIGURED || !db) throw new Error('Firebase not configured');
   await setDoc(nonCashRef(month), clean(state));
 }
-window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash };
+// PMF – one document per saved Product Movement Form
+async function listPmf() {
+  if (!CONFIGURED || !db) return null;
+  const snap = await getDocs(collection(db, 'stores', STORE_ID, 'pmf'));
+  return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+}
+async function savePmf(id, form) {
+  if (!CONFIGURED || !db) throw new Error('Firebase not configured');
+  await setDoc(doc(db, 'stores', STORE_ID, 'pmf', id), clean(form));
+}
+async function deletePmf(id) {
+  if (!CONFIGURED || !db) throw new Error('Firebase not configured');
+  await deleteDoc(doc(db, 'stores', STORE_ID, 'pmf', id));
+}
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash, listPmf, savePmf, deletePmf };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));
