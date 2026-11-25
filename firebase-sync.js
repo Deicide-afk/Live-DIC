@@ -164,5 +164,15 @@ async function deletePmf(id) {
   if (!CONFIGURED || !db) throw new Error('Firebase not configured');
   await deleteDoc(doc(db, 'stores', STORE_ID, 'pmf', id));
 }
-window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash, listPmf, savePmf, deletePmf };
+// Discount report – one document per month (e.g. 2026-11)
+async function loadDiscounts(month) {
+  if (!CONFIGURED || !db) return null;
+  const snap = await getDoc(doc(db, 'stores', STORE_ID, 'discounts', month));
+  return snap.exists() ? snap.data() : null;
+}
+async function saveDiscounts(month, state) {
+  if (!CONFIGURED || !db) throw new Error('Firebase not configured');
+  await setDoc(doc(db, 'stores', STORE_ID, 'discounts', month), clean(state));
+}
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash, listPmf, savePmf, deletePmf, loadDiscounts, saveDiscounts };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));

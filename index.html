@@ -335,6 +335,19 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
 .pmf-chip{border:1px solid var(--border);border-radius:99px;padding:1px 8px;font-size:.62rem!important}
 .pmf-chip.warn{color:#f5a623!important;border-color:#f5a623}
 .pmf-empty{font-size:.78rem;color:var(--muted);padding:14px;border:1px dashed var(--border);border-radius:12px;text-align:center}
+
+/* DISCOUNTS */
+.dsc-row{cursor:pointer}
+.dsc-row:hover td{background:var(--card)}
+.dsc-row td{font-weight:600}
+.dsc-row.open td{background:var(--card)}
+.dsc-caret{display:inline-block;width:16px;color:var(--accent2)}
+.dsc-day td{font-size:.7rem;color:var(--muted);font-weight:400}
+.dsc-day td.nc-date{padding-left:30px!important;font-weight:400}
+.dsc-empty{font-size:.8rem;color:var(--muted);padding:22px 14px;border:1px dashed var(--border);border-radius:12px;text-align:center;margin-top:12px}
+table.nc-table.dsc-table{min-width:0}
+@media(max-width:600px){.dsc-table th:nth-child(4),.dsc-table td:nth-child(4){display:none}.dsc-table th,.dsc-table td{padding-left:5px!important;padding-right:5px!important}.dsc-day td.nc-date{padding-left:22px!important}}
+.dsc-warn{font-size:.74rem;color:#f87171;border:1px solid #f87171;border-radius:10px;padding:9px 12px;margin:0 0 10px;line-height:1.45}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -385,6 +398,7 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
     <button class="sub-btn active" id="sub-btn-sales" onclick="switchTab('sales')">Sales</button>
     <button class="sub-btn" id="sub-btn-dailychecker" onclick="switchTab('dailychecker')">Daily Checker</button>
     <button class="sub-btn" id="sub-btn-noncash" onclick="switchTab('noncash')">Non Cash</button>
+    <button class="sub-btn" id="sub-btn-discounts" onclick="switchTab('discounts')">Discounts</button>
   </div>
 
   <!-- DIC TAB -->
@@ -562,6 +576,25 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
           <tbody id="daily-checker-tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- DISCOUNTS TAB -->
+  <div id="tab-discounts" class="tab-content">
+    <div class="nc-wrap">
+      <div class="nc-toolbar">
+        <label class="nc-month">Month <input type="month" id="dsc-month" onchange="dscSetMonth(this.value)"></label>
+        <div class="nc-save" id="dsc-save-status"></div>
+      </div>
+      <label class="nc-drop" id="dsc-drop" for="dsc-files">
+        <input type="file" id="dsc-files" accept=".pdf,application/pdf" multiple hidden onchange="dscHandleFiles(this.files);this.value=''">
+        <div class="nc-drop-title">📄 Upload Discount Report</div>
+        <div class="nc-drop-sub">POS “Discount Report – Group By Name” (PDF). Days inside the report’s period are updated and other days are kept, so you can re-upload as the month goes.</div>
+      </label>
+      <div class="nc-notes" id="dsc-notes"></div>
+      <div id="dsc-summary"></div>
+      <div id="dsc-view"></div>
+      <div class="nc-foot"><button onclick="dscClear()">Clear this month</button></div>
     </div>
   </div>
 
@@ -1653,7 +1686,7 @@ async function clearDailyCheckerMonth(){
 
 // ── TAB SWITCH ───────────────────────────────────────────────
 const DIC_SUBS=['dic','count','prodsold','delivery','products','mtdvar','ydic','pmf'];
-const SALES_SUBS=['sales','dailychecker','noncash'];
+const SALES_SUBS=['sales','dailychecker','noncash','discounts'];
 function switchMain(main){
   ['dic','sales','print','weekly'].forEach(m=>{
     document.getElementById('main-btn-'+m).classList.toggle('active',m===main);
@@ -1698,6 +1731,7 @@ function switchTab(name){
   if(name==='dailychecker')loadDailyCheckerMonth(dailyCheckerMonth);
   if(name==='noncash'&&typeof ncOpen==='function')ncOpen();
   if(name==='pmf'&&typeof pmfOpen==='function')pmfOpen();
+  if(name==='discounts'&&typeof dscOpen==='function')dscOpen();
   if(name==='count') refreshCountVariances();
 }
 
@@ -4222,6 +4256,256 @@ function pmfPrint(){
   };
   fr.srcdoc=html;
 }
+</script>
+<script>
+/* DSC-ENGINE-START */
+// ── DISCOUNT REPORT ENGINE (pure functions) ──────────────────
+// Report layout: Disc Name | ID | Date | Time | Rcpt No. | OS No. | Amount
+// Name appears on the first row of each group, the date on the first row of each day, the ID only on some rows.
+function dscR2(x){return Math.round(x*100)/100;}
+function dscNum(s){var n=parseFloat(String(s).replace(/,/g,''));return isFinite(n)?n:0;}
+function dscPad(n){return (n<10?'0':'')+n;}
+// "11/25/2026" (MM/DD/YYYY) → "2026-11-25"
+function dscIso(s){
+  var m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s).trim());if(!m)return null;
+  var a=+m[1],b=+m[2];if(a>12&&b<=12){var t=a;a=b;b=t;}
+  return m[3]+'-'+dscPad(a)+'-'+dscPad(b);
+}
+
+// pages: [[{s,x,y,w}, …], …] (text items straight from pdf.js) → array of text lines
+function dscBuildLines(pages){
+  var out=[];
+  pages.forEach(function(items){
+    var it=items.filter(function(i){return String(i.s).trim()!=='';}).sort(function(a,b){return (b.y-a.y)||(a.x-b.x);});
+    // group into lines: a column can sit a couple of points higher/lower on the same row (OS No. does),
+    // so link items whose y is within 5pt of the previous one (rows are 12pt+ apart)
+    var lines=[],cur=null,prevY=null;
+    it.forEach(function(i){
+      if(!cur||prevY-i.y>5){cur={y:i.y,items:[]};lines.push(cur);}
+      cur.items.push(i);prevY=i.y;
+    });
+    lines.forEach(function(l){
+      l.items.sort(function(a,b){return a.x-b.x;});
+      var s='',end=null;
+      l.items.forEach(function(i){
+        var t=String(i.s).trim();
+        if(end!==null&&(i.x-end)<1.2)s+=t;else s+=(s?' ':'')+t;
+        end=i.x+(i.w||0);
+      });
+      out.push(s);
+    });
+  });
+  return out;
+}
+
+var DSC_TAIL=/(?:(\d{1,2}\/\d{1,2}\/\d{4})\s+)?(\d{1,2}:\d{2})\s+(\d{5,9})\s+(?:(\d{5,10})\s+)?(-?[\d,]*\.\d{2})$/;
+function dscParseLines(lines){
+  var rows=[],subs={},order=[],period=null,name=null,date=null;
+  lines.forEach(function(raw){
+    var ln=raw.replace(/\s+/g,' ').trim(),m;
+    if((m=/from the period of\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(ln))){period={from:dscIso(m[1]),to:dscIso(m[2])};return;}
+    if((m=/^(.+?)\s+Sub-?Total:?\s*(-?[\d,]*\.\d{2})$/i.exec(ln))){subs[m[1].trim()]=dscNum(m[2]);return;}
+    m=DSC_TAIL.exec(ln);if(!m)return;
+    var pre=ln.slice(0,m.index).trim(),id='',mid=/(?:^|\s)(\d{4,7})$/.exec(pre);
+    if(mid){id=mid[1];pre=pre.slice(0,mid.index).trim();}
+    if(pre){name=pre;if(order.indexOf(name)<0)order.push(name);}
+    if(m[1])date=dscIso(m[1]);
+    if(!name||!date)return;
+    rows.push({n:name,d:date,t:m[2],r:m[3],os:m[4]||'',id:id,a:dscNum(m[5])});
+  });
+  return {rows:rows,subs:subs,order:order,period:period};
+}
+
+// count rows per month (to pick the month of an upload)
+function dscMonthCounts(rows){var o={};rows.forEach(function(r){var k=r.d.slice(0,7);o[k]=(o[k]||0)+1;});return o;}
+
+// rows → [{n, d:{iso:[amount,count]}}] for one month, names in report order
+function dscAggregate(parsed,month){
+  var map={},names=[];
+  parsed.order.forEach(function(n){map[n]={n:n,d:{}};names.push(map[n]);});
+  parsed.rows.forEach(function(r){
+    if(r.d.slice(0,7)!==month)return;
+    var e=map[r.n].d[r.d]||(map[r.n].d[r.d]=[0,0]);e[0]+=r.a;e[1]++;
+  });
+  names.forEach(function(x){Object.keys(x.d).forEach(function(k){x.d[k][0]=dscR2(x.d[k][0]);});});
+  return names;
+}
+
+function dscNewState(month){return {month:month,names:[],rep:[],src:null,updatedMs:0};}
+// merge an upload into the month: days inside the report period are replaced, other days are kept
+function dscApply(state,parsed,month,fname){
+  var agg=dscAggregate(parsed,month),all=parsed.rows.map(function(r){return r.d;}).sort();
+  var from=(parsed.period&&parsed.period.from)||all[0],to=(parsed.period&&parsed.period.to)||all[all.length-1];
+  state.names.forEach(function(x){Object.keys(x.d).forEach(function(k){if(k>=from&&k<=to)delete x.d[k];});});
+  agg.forEach(function(a){
+    var ex=null;state.names.forEach(function(x){if(x.n===a.n)ex=x;});
+    if(!ex){ex={n:a.n,d:{}};state.names.push(ex);}
+    Object.keys(a.d).forEach(function(k){ex.d[k]=a.d[k];});
+  });
+  // integrity check: what we read (all months) vs the report's own sub-totals
+  var calc={};parsed.rows.forEach(function(r){calc[r.n]=(calc[r.n]||0)+r.a;});
+  state.rep=Object.keys(parsed.subs).map(function(n){
+    var c=dscR2(calc[n]||0);return {n:n,rep:parsed.subs[n],calc:c,ok:Math.abs(c-parsed.subs[n])<0.005};
+  });
+  state.src={file:fname||'',from:from,to:to,receipts:parsed.rows.length};
+  return state;
+}
+function dscTotals(x){var a=0,c=0;Object.keys(x.d).forEach(function(k){a+=x.d[k][0];c+=x.d[k][1];});return {amt:dscR2(a),cnt:c};}
+/* DSC-ENGINE-END */
+
+// ── DISCOUNTS TAB (UI) ───────────────────────────────────────
+var dscMonth=null,dscState=null,dscOpenNames={},dscSaveTimer=null,dscReady=Promise.resolve();
+var DSC_LS='rr_disc_RR7024_';
+var DSC_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DSC_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function dscEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dscFmt(n,sign){
+  if(n==null||isNaN(n))return '—';
+  var s=Math.abs(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (n<0?'−':(sign&&n>0?'+':''))+s;
+}
+function dscMonthLabel(m){var p=m.split('-');return DSC_MON[+p[1]-1]+' '+p[0];}
+function dscDayLabel(k){var p=k.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);return DSC_MON[+p[1]-1]+' '+(+p[2])+' · '+DSC_DOW[d.getDay()];}
+function dscShort(k){var p=k.split('-');return DSC_MON[+p[1]-1]+' '+(+p[2]);}
+function dscStatus(t,ok){var el=document.getElementById('dsc-save-status');if(!el)return;el.textContent=t||'';el.style.color=(ok===false)?'#f87171':'';}
+function dscNotes(list){var el=document.getElementById('dsc-notes');if(!el)return;el.innerHTML=(list||[]).map(function(t){return '<div>'+dscEsc(t)+'</div>';}).join('');}
+
+// ── open / load / save ───────────────────────────────────────
+function dscOpen(){
+  if(!dscMonth){
+    var now=new Date();dscMonth=now.getFullYear()+'-'+dscPad(now.getMonth()+1);
+    dscState=dscNewState(dscMonth);
+    dscReady=dscLoad(dscMonth);
+  }
+  document.getElementById('dsc-month').value=dscMonth;
+  dscRender();
+}
+function dscLocal(month){try{var r=localStorage.getItem(DSC_LS+month);return r?JSON.parse(r):null;}catch(e){return null;}}
+async function dscLoad(month){
+  dscMonth=month;dscOpenNames={};
+  var loc=dscLocal(month);
+  dscState=loc?Object.assign(dscNewState(month),loc):dscNewState(month);
+  var mi=document.getElementById('dsc-month');if(mi)mi.value=month;
+  dscRender();
+  if(window.RRFB&&window.RRFB.loadDiscounts){
+    try{
+      var remote=await window.RRFB.loadDiscounts(month);
+      if(month!==dscMonth)return;
+      if(remote&&remote.names&&(remote.updatedMs||0)>=(dscState.updatedMs||0)){
+        dscState=Object.assign(dscNewState(month),remote);dscRender();dscStatus('☁ Loaded from Firebase');
+      }else dscStatus(loc?'Loaded':'');
+    }catch(e){console.warn('[Discounts] cloud load failed',e);dscStatus('Cloud unavailable – showing data saved on this device',false);}
+  }
+}
+function dscSetMonth(v){if(!v||v===dscMonth)return;dscFlush();dscReady=dscLoad(v);}
+function dscPersist(){
+  if(!dscState)return;
+  dscState.updatedMs=Date.now();dscStatus('Saving…');
+  clearTimeout(dscSaveTimer);dscSaveTimer=setTimeout(dscFlush,500);
+}
+async function dscFlush(){
+  clearTimeout(dscSaveTimer);dscSaveTimer=null;
+  if(!dscState)return;
+  var m=dscMonth,st=dscState;
+  try{localStorage.setItem(DSC_LS+m,JSON.stringify(st));}catch(e){}
+  if(window.RRFB&&window.RRFB.saveDiscounts){
+    try{await window.RRFB.saveDiscounts(m,st);if(m===dscMonth)dscStatus('✓ Saved to Firebase');}
+    catch(e){console.warn('[Discounts] cloud save failed',e);if(m===dscMonth)dscStatus('Saved on this device only – publish the updated firestore.rules to sync',false);}
+  }else dscStatus('Saved on this device');
+}
+function dscClear(){
+  if(!confirm('Clear all Discount data for '+dscMonthLabel(dscMonth)+'?'))return;
+  dscState=dscNewState(dscMonth);dscOpenNames={};dscPersist();dscRender();dscNotes(['Month cleared.']);
+}
+
+// ── reading the PDF (same pdf.js the rest of the site uses) ──
+async function dscReadPdf(file){
+  var lib=window['pdfjs-dist/build/pdf'];
+  if(!lib)throw new Error('PDF reader did not load – check your internet connection');
+  lib.GlobalWorkerOptions.workerSrc='';
+  var pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise,pages=[];
+  for(var p=1;p<=pdf.numPages;p++){
+    var ct=await (await pdf.getPage(p)).getTextContent();
+    pages.push(ct.items.map(function(i){return {s:i.str,x:i.transform[4],y:i.transform[5],w:i.width||0};}));
+  }
+  return pages;
+}
+async function dscHandleFiles(list){
+  var files=Array.prototype.slice.call(list||[]),notes=[];
+  if(!files.length)return;
+  await dscReady;
+  dscNotes(['Reading '+files.length+' file'+(files.length>1?'s':'')+'…']);
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    try{
+      var parsed=dscParseLines(dscBuildLines(await dscReadPdf(f)));
+      if(!parsed.rows.length){notes.push('⚠ '+f.name+': no discount rows recognised – is this the “Discount Report – Group By Name”?');continue;}
+      var counts=dscMonthCounts(parsed.rows),keys=Object.keys(counts);
+      if(!counts[dscMonth]){
+        var best=keys.sort(function(a,b){return counts[b]-counts[a];})[0];
+        dscFlush();await dscLoad(best);notes.push('Switched to '+dscMonthLabel(best)+' – the month found in '+f.name);
+      }
+      dscApply(dscState,parsed,dscMonth,f.name);
+      var other=parsed.rows.filter(function(r){return r.d.slice(0,7)!==dscMonth;}).length;
+      var bad=dscState.rep.filter(function(r){return !r.ok;});
+      notes.push('✓ '+f.name+': '+parsed.rows.length+' receipts · '+parsed.order.length+' discount types · '+dscShort(dscState.src.from)+' – '+dscShort(dscState.src.to)+(other?' ('+other+' receipts from other months ignored)':''));
+      notes.push(bad.length?'⚠ '+bad.length+' total'+(bad.length>1?'s don’t':' doesn’t')+' match the report’s own sub-totals – check '+bad.map(function(b){return b.n;}).join(', ')
+                           :'✓ All '+dscState.rep.length+' totals match the report’s own sub-totals');
+    }catch(e){console.error(e);notes.push('⚠ '+f.name+': '+e.message);}
+  }
+  dscPersist();dscRender();dscNotes(notes);
+}
+
+// ── rendering ────────────────────────────────────────────────
+function dscToggle(i){
+  var x=dscState.names[i];if(!x)return;
+  dscOpenNames[x.n]=!dscOpenNames[x.n];dscRender();
+}
+function dscRender(){
+  if(!dscState)return;
+  var mi=document.getElementById('dsc-month');if(mi&&mi.value!==dscMonth)mi.value=dscMonth;
+  var sum=document.getElementById('dsc-summary'),host=document.getElementById('dsc-view');
+  var st=dscState;
+  if(!st.names.length){
+    sum.innerHTML='';
+    host.innerHTML='<div class="dsc-empty">Upload the POS “Discount Report – Group By Name” PDF to see the discount per name for '+dscEsc(dscMonthLabel(dscMonth))+'.</div>';
+    return;
+  }
+  var rows=st.names.map(function(x){return {x:x,t:dscTotals(x)};}),tAmt=0,tCnt=0;
+  rows.forEach(function(r){tAmt+=r.t.amt;tCnt+=r.t.cnt;});tAmt=dscR2(tAmt);
+  var bad=st.rep.filter(function(r){return !r.ok;});
+  sum.innerHTML='<div class="nc-summary"><b>'+dscEsc(dscMonthLabel(dscMonth))+'</b> · '+tCnt+' receipts · total discounts <b>₱'+dscFmt(tAmt)+'</b>'+
+    (st.src?' · last report '+dscShort(st.src.from)+' – '+dscShort(st.src.to)+' <span class="nc-dim">('+dscEsc(st.src.file)+')</span>':'')+'</div>'+
+    (bad.length?'<div class="dsc-warn">⚠ '+bad.map(function(b){return dscEsc(b.n);}).join(', ')+' did not match the report’s own sub-total, so the PDF may not have been read correctly. Please compare those rows with the report.</div>':'');
+  var h='<div class="nc-scroll"><table class="nc-table dsc-table"><thead><tr><th class="nc-date">Discount</th><th>Receipts</th><th>Amount</th><th>Share</th><th>Report check</th></tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var open=!!dscOpenNames[r.x.n],share=tAmt?r.t.amt/tAmt*100:0,c=null;
+    st.rep.forEach(function(q){if(q.n===r.x.n)c=q;});
+    var chk=!c?'<span class="nc-dim">—</span>':c.ok?'<span class="nc-ok" title="Matches the report sub-total ('+dscFmt(c.rep)+')">✓</span>'
+      :'<span class="nc-neg" title="Report sub-total '+dscFmt(c.rep)+' but '+dscFmt(c.calc)+' was read">⚠ '+dscFmt(c.rep)+'</span>';
+    h+='<tr class="dsc-row'+(open?' open':'')+'" onclick="dscToggle('+i+')"><td class="nc-date"><span class="dsc-caret">'+(open?'▾':'▸')+'</span>'+dscEsc(r.x.n)+'</td>'+
+       '<td>'+r.t.cnt+'</td><td><b>'+dscFmt(r.t.amt)+'</b></td><td>'+share.toFixed(1)+'%</td><td>'+chk+'</td></tr>';
+    if(open){
+      Object.keys(r.x.d).sort().forEach(function(k){
+        var d=r.x.d[k];
+        h+='<tr class="dsc-day"><td class="nc-date dsc-indent">'+dscDayLabel(k)+'</td><td>'+d[1]+'</td><td'+(d[0]<0?' class="nc-neg"':'')+'>'+dscFmt(d[0])+'</td><td></td><td></td></tr>';
+      });
+    }
+  });
+  h+='<tr class="nc-total"><td class="nc-date">Total</td><td>'+tCnt+'</td><td>'+dscFmt(tAmt)+'</td><td>100%</td><td></td></tr></tbody></table></div>'+
+     '<div class="nc-notes">Click a discount name to see the amount per day. ✓ means what was read from the last uploaded report matches that report’s own sub-total.</div>';
+  host.innerHTML=h;
+}
+
+// drag & drop onto the upload box
+(function(){
+  var z=document.getElementById('dsc-drop');if(!z)return;
+  ['dragenter','dragover'].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(ev){z.addEventListener(ev,function(e){e.preventDefault();z.classList.remove('drag');});});
+  z.addEventListener('drop',function(e){if(e.dataTransfer&&e.dataTransfer.files)dscHandleFiles(e.dataTransfer.files);});
+})();
+window.addEventListener('rr-firebase-ready',function(){if(dscMonth&&!dscSaveTimer)dscReady=dscLoad(dscMonth);});
 </script>
 <script type="module">
   import './firebase-sync.js';
