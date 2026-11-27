@@ -348,6 +348,13 @@ input.nc-in:focus,input.nc-rem:focus{outline:none;border-color:var(--accent2)}
 table.nc-table.dsc-table{min-width:0}
 @media(max-width:600px){.dsc-table th:nth-child(4),.dsc-table td:nth-child(4){display:none}.dsc-table th,.dsc-table td{padding-left:5px!important;padding-right:5px!important}.dsc-day td.nc-date{padding-left:22px!important}}
 .dsc-warn{font-size:.74rem;color:#f87171;border:1px solid #f87171;border-radius:10px;padding:9px 12px;margin:0 0 10px;line-height:1.45}
+
+/* OSS ATTENDANCE */
+.oss-scroll{overflow-x:auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px}
+.schedule-toolbar button.oss-cut.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.oss-status{font-size:.72rem;color:var(--muted);margin-left:4px}
+.oss-hint{display:none;font-size:.72rem;color:var(--muted);margin:-4px 0 8px}
+@media(max-width:900px){.oss-hint{display:block}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -791,6 +798,7 @@ table.nc-table.dsc-table{min-width:0}
       <div class="schedule-subtabs no-print">
         <button id="weekly-sub-schedule" class="active" onclick="switchWeeklySub('schedule')">Schedule</button>
         <button id="weekly-sub-requests" onclick="switchWeeklySub('requests')">Request Sched</button>
+        <button id="weekly-sub-oss" onclick="switchWeeklySub('oss')">OSS Attendance</button>
       </div>
       <section id="weekly-schedule-panel">
         <div class="schedule-toolbar no-print">
@@ -832,6 +840,17 @@ table.nc-table.dsc-table{min-width:0}
           <button onclick="addScheduleRequest()">Add Request</button>
         </div>
         <div class="schedule-table-scroll"><table class="request-table"><thead><tr><th>Employee</th><th>Date</th><th>Request</th><th>Reason</th><th class="no-print">Action</th></tr></thead><tbody id="weekly-requests-body"></tbody></table></div>
+      </section>
+      <section id="weekly-oss-panel" style="display:none">
+        <div class="schedule-toolbar no-print">
+          <label>Month <input type="month" id="oss-month" onchange="ossSetMonth(this.value)"></label>
+          <button id="oss-cut-a" class="oss-cut" onclick="ossSetCut('a')">25 - 9</button>
+          <button id="oss-cut-b" class="oss-cut" onclick="ossSetCut('b')">10 - 24</button>
+          <button onclick="ossPrint()">Print / PDF</button>
+          <span id="oss-status" class="oss-status"></span>
+        </div>
+        <div class="oss-hint no-print">Swipe sideways to see all the days. Tap a box to tick it.</div>
+        <div class="oss-scroll"><div id="oss-host"></div></div>
       </section>
     </div>
   </div>
@@ -3361,7 +3380,7 @@ function removeScheduleEmployee(i){if(!confirm('Remove this employee from the we
 function setScheduleWeek(){const d=weeklyMonday(document.getElementById('weekly-start-date').value||weeklyDateISO(new Date()));weeklySchedule.weekStart=weeklyDateISO(d);weeklyChanged();renderWeeklySchedule();}
 function applySchedulePreset(){const days=weeklyDays(),preset=document.getElementById('weekly-preset').value;const patterns=preset==='1'?{'CHARLES':'Closing Mngr','JERRYME':'Opening Mngr','RESHELL':'Opening Crew','ROSE':'Closing Crew','MARY JANE':'Opening Crew','JESS':'Closing Crew'}:{'CHARLES':'Closing Mngr','JERRYME':'Opening Mngr','RESHELL':'Closing Crew','ROSE':'Opening Crew','MARY JANE':'Closing Crew','JESS':'Opening Crew'};weeklySchedule.employees.forEach((e,ei)=>days.forEach((d,di)=>{let v=patterns[e.name.toUpperCase()]||'Opening Crew';if((e.rd||[]).includes(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][di]))v='RESTDAY';weeklySchedule.cells[weeklyCellKey(ei,weeklyDateISO(d))]=v;}));weeklyChanged();renderWeeklySchedule();}
 function clearWeeklySchedule(){if(!confirm('Clear all shift entries for this week? Employee names and default rest days will remain.'))return;weeklySchedule.cells={};weeklyChanged();renderWeeklySchedule();}
-function switchWeeklySub(which){document.getElementById('weekly-schedule-panel').style.display=which==='schedule'?'block':'none';document.getElementById('weekly-requests-panel').style.display=which==='requests'?'block':'none';document.getElementById('weekly-sub-schedule').classList.toggle('active',which==='schedule');document.getElementById('weekly-sub-requests').classList.toggle('active',which==='requests');}
+function switchWeeklySub(which){document.getElementById('weekly-schedule-panel').style.display=which==='schedule'?'block':'none';document.getElementById('weekly-requests-panel').style.display=which==='requests'?'block':'none';const oss=document.getElementById('weekly-oss-panel');if(oss)oss.style.display=which==='oss'?'block':'none';document.getElementById('weekly-sub-schedule').classList.toggle('active',which==='schedule');document.getElementById('weekly-sub-requests').classList.toggle('active',which==='requests');const ob=document.getElementById('weekly-sub-oss');if(ob)ob.classList.toggle('active',which==='oss');if(which==='oss'&&typeof ossOpen==='function')ossOpen();}
 function addScheduleRequest(){const employee=document.getElementById('request-employee').value,date=document.getElementById('request-date').value,type=document.getElementById('request-type').value,reason=document.getElementById('request-reason').value.trim();if(!employee||!date){alert('Please select an employee and date.');return;}weeklySchedule.requests.push({employee,date,type,reason});document.getElementById('request-reason').value='';weeklyChanged();renderScheduleRequests();}
 function removeScheduleRequest(i){weeklySchedule.requests.splice(i,1);weeklyChanged();renderScheduleRequests();}
 function renderScheduleRequests(){const body=document.getElementById('weekly-requests-body');if(!body)return;body.innerHTML=weeklySchedule.requests.map((r,i)=>`<tr><td>${escSched(r.employee)}</td><td>${escSched(r.date)}</td><td>${escSched(r.type)}</td><td>${escSched(r.reason)}</td><td class="no-print"><button onclick="removeScheduleRequest(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="5">No schedule requests yet.</td></tr>';}
@@ -4506,6 +4525,229 @@ function dscRender(){
   z.addEventListener('drop',function(e){if(e.dataTransfer&&e.dataTransfer.files)dscHandleFiles(e.dataTransfer.files);});
 })();
 window.addEventListener('rr-firebase-ready',function(){if(dscMonth&&!dscSaveTimer)dscReady=dscLoad(dscMonth);});
+</script>
+<script>
+/* OSS-ENGINE-START */
+// ── OSS ATTENDANCE ENGINE (pure functions) ───────────────────
+// Two cut-offs per month:  'b' = 10–24 of the month  ·  'a' = 25 of the previous month – 9 of the month
+var OSS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var OSS_ROWS=5, OSS_COLS=16;
+function ossP2(n){return (n<10?'0':'')+n;}
+function ossIso(y,m,d){return y+'-'+ossP2(m)+'-'+ossP2(d);}
+function ossDim(y,m){return new Date(y,m,0).getDate();}           // m = 1…12
+function ossPeriod(month,cut){
+  var p=month.split('-'),y=+p[0],m=+p[1],days=[],text,d;
+  if(cut==='a'){
+    var py=m===1?y-1:y,pm=m===1?12:m-1,dim=ossDim(py,pm);
+    for(d=25;d<=dim;d++)days.push(ossIso(py,pm,d));
+    for(d=1;d<=9;d++)days.push(ossIso(y,m,d));
+    text=OSS_MON[pm-1]+' 25 - '+OSS_MON[m-1]+' 9';
+  }else{
+    for(d=10;d<=24;d++)days.push(ossIso(y,m,d));
+    text=OSS_MON[m-1]+' 10 - 24';
+  }
+  return {days:days,text:text,year:String(y)};
+}
+// which month/cut-off to show first, from today's date
+function ossDefaultSel(now){
+  var y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate();
+  if(d<=9)return {month:y+'-'+ossP2(m),cut:'a'};
+  if(d<=24)return {month:y+'-'+ossP2(m),cut:'b'};
+  var ny=m===12?y+1:y,nm=m===12?1:m+1;
+  return {month:ny+'-'+ossP2(nm),cut:'a'};
+}
+function ossNewState(month,cut,names){
+  var rows=[];
+  for(var i=0;i<OSS_ROWS;i++)rows.push({n:(names&&names[i])||'',d:[]});
+  return {id:month+'-'+cut,month:month,cut:cut,rows:rows,updatedMs:0};
+}
+function ossNormalize(st,month,cut){
+  var o=Object.assign(ossNewState(month,cut),st||{}),rows=[];
+  for(var i=0;i<OSS_ROWS;i++){var r=(st&&st.rows&&st.rows[i])||{};rows.push({n:r.n||'',d:Array.isArray(r.d)?r.d.slice():[]});}
+  o.rows=rows;o.id=month+'-'+cut;o.month=month;o.cut=cut;
+  return o;
+}
+// number of ✔ inside the period's own days
+function ossRowTotal(row,days){
+  var set={};days.forEach(function(d){set[d]=1;});
+  return (row.d||[]).filter(function(d){return set[d];}).length;
+}
+/* OSS-ENGINE-END */
+
+// ── OSS ATTENDANCE (UI) ──────────────────────────────────────
+var ossMonth=null,ossCut='b',ossState=null,ossSaveTimer=null,ossReady=Promise.resolve(),ossBooted=false;
+var OSS_LS='rr_oss_RR7024_',OSS_NAMES_LS='rr_oss_names';
+// locked parts of the sheet (copied from the S'JOHN sheet)
+var OSS_FIXED={fom:'JOHN RODRIGUEZ',store:'7024',emp:'93413',rm:'Charles Arthur Salamat'};
+var OSS_DEFAULT_NAMES=['Mary Jane F. Husayan','','','',''];
+// column widths in px, A…S, taken from the Excel sheet (width×7+5)
+var OSS_COLW=[241,147,74,66,66,40,45,66,40,66,66,40,49,66,40,66,66,56,146];
+
+var OSS_SHEET_CSS=`
+.oss-sheet{border-collapse:collapse;table-layout:fixed;width:1446px;background:#fff;color:#000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:14.67px;line-height:1.15;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.oss-sheet td,.oss-sheet th{padding:0 3px;overflow:hidden;white-space:nowrap;vertical-align:middle;box-sizing:border-box}
+.oss-sheet .ttl td{font-size:26.67px;font-weight:700;text-align:center;height:35px}
+.oss-sheet .spc td{height:41px}
+.oss-sheet .bx td{font-size:18.67px;font-weight:700;height:25px}
+.oss-sheet .bx td.r{text-align:right}
+.oss-sheet .bx td.cut{text-align:right;border-bottom:1px solid #000}
+.oss-sheet .bx td.yr{text-align:left;padding-left:5px}
+.oss-sheet .hd th{background:#B7DEE8;font-weight:700;text-align:center;border:1px solid #000;height:40px;padding:0 2px;white-space:normal;line-height:1.1;font-size:14.67px}
+.oss-sheet .hd th.big{font-size:16px}
+.oss-sheet tr.dr td{height:20px;border:1px solid #000}
+.oss-sheet tr.dr td.nm{text-align:left}
+.oss-sheet tr.dr td.c,.oss-sheet tr.dr td.ck{text-align:center}
+.oss-sheet td.ck{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.oss-edit td.ck:hover{background:#e6f4f8}
+.oss-sheet .sg td{height:20px}
+.oss-sheet td.sig{text-align:center;border-bottom:1px solid #000}
+.oss-sheet td.rm{text-align:center;border-top:1px solid #000;border-bottom:1px solid #000}
+.oss-sheet td.rm2{text-align:center;border-top:1px solid #000}
+.oss-sheet td.lbl{text-align:center;font-weight:700}
+.oss-ttl{margin-left:2px}
+.oss-frame{border:2px solid #000;width:1450px;box-sizing:border-box;background:#fff}
+.oss-frame .oss-sheet tr>*:first-child{border-left:0!important}
+.oss-frame .oss-sheet tr>*:last-child{border-right:0!important}
+.oss-frame .oss-sheet tbody tr:first-child>*{border-top:0!important}
+.oss-frame .oss-sheet tbody tr:last-child>*{border-bottom:0!important}
+.oss-sheet input.oss-name{display:block;width:100%;border:0;border-radius:0;background:transparent;color:#000;font:inherit;padding:0 2px;margin:0;outline:none;box-shadow:none;-webkit-appearance:none;appearance:none}
+.oss-sheet input.oss-name:focus{background:#fff6cc}
+.oss-edit .stk{position:sticky;left:0;z-index:2;background:#fff}
+.oss-edit th.stk{background:#B7DEE8}
+@media (pointer:coarse){.oss-edit tr.dr td{height:30px}}
+`;
+
+function ossEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function ossStatus(t,ok){var el=document.getElementById('oss-status');if(!el)return;el.textContent=t||'';el.style.color=(ok===false)?'#f87171':'';}
+function ossTotalText(row,days){var t=ossRowTotal(row,days);return ((row.n||'').trim()||t)?String(t):'';}
+
+// ── the sheet (mode 'edit' = inputs and tappable boxes, 'print' = plain) ──
+function ossSheetHtml(st,mode){
+  var E=mode==='edit',per=ossPeriod(st.month,st.cut),days=per.days,h='',i,c;
+  var stk=E?' stk':'';
+  var cols='<colgroup>'+OSS_COLW.map(function(w){return '<col style="width:'+w+'px">';}).join('')+'</colgroup>';
+  h+='<table class="oss-sheet oss-ttl">'+cols+'<tbody>'+
+     '<tr class="ttl"><td colspan="18">STAFF SEARCH ASIA SERVICE COOPERATIVE</td><td></td></tr>'+
+     '<tr class="ttl"><td colspan="18">ON SITE SUPERVISORS ATTENDANCE</td><td></td></tr>'+
+     '<tr class="spc"><td colspan="19"></td></tr></tbody></table>';
+  h+='<div class="oss-frame"><table class="oss-sheet'+(E?' oss-edit':'')+'">'+cols+'<tbody>';
+  h+='<tr class="bx"><td class="'+stk.trim()+'">FOM:</td><td colspan="17">'+OSS_FIXED.fom+'</td><td></td></tr>';
+  h+='<tr class="bx"><td class="'+stk.trim()+'">STORE NAME:</td><td class="r">'+OSS_FIXED.store+'</td><td colspan="16"></td><td></td></tr>';
+  h+='<tr class="bx"><td class="'+stk.trim()+'">CUT-OFF PERIOD:</td><td colspan="2" class="cut" id="oss-cut-text">'+ossEsc(per.text)+'</td><td colspan="15" class="yr" id="oss-year">'+ossEsc(per.year)+'</td><td></td></tr>';
+  // header
+  h+='<tr class="hd"><th class="big'+stk+'">ON-SITE SUPERVISOR NAME</th><th class="big">EMPLOYEE NO.</th>';
+  for(c=0;c<OSS_COLS;c++)h+='<th>'+(days[c]?parseInt(days[c].slice(8),10):'')+'</th>';
+  h+='<th>TOTAL DAYS PRESENT</th></tr>';
+  // attendance rows
+  for(i=0;i<OSS_ROWS;i++){
+    var row=st.rows[i],set={};(row.d||[]).forEach(function(d){set[d]=1;});
+    h+='<tr class="dr"><td class="nm'+stk+'">'+(E?'<input class="oss-name" data-r="'+i+'" value="'+ossEsc(row.n)+'" oninput="ossName(this)" autocomplete="off" spellcheck="false">':ossEsc(row.n))+'</td>'+
+       '<td class="c">'+(i===0?OSS_FIXED.emp:'')+'</td>';
+    for(c=0;c<OSS_COLS;c++){
+      var d=days[c];
+      if(!d)h+='<td></td>';
+      else h+='<td class="ck"'+(E?' data-r="'+i+'" data-d="'+d+'" onclick="ossToggle(this)"':'')+'>'+(set[d]?'✔':'')+'</td>';
+    }
+    h+='<td class="c" id="oss-tot-'+i+'">'+ossTotalText(row,days)+'</td></tr>';
+  }
+  // signature block
+  h+='<tr class="sg"><td class="sig'+stk+'" id="oss-sig">'+ossEsc(st.rows[0].n)+'</td><td></td><td colspan="3" class="rm">'+OSS_FIXED.rm+'</td><td colspan="13"></td><td></td></tr>';
+  h+='<tr class="sg"><td class="lbl'+stk+'">OSS Name and Signature</td><td></td><td colspan="3" class="rm2">RM / ARM&nbsp; Signature</td><td colspan="13"></td><td></td></tr>';
+  return h+'</tbody></table></div>';
+}
+
+// ── open / load / save ───────────────────────────────────────
+function ossLastNames(){try{var n=JSON.parse(localStorage.getItem(OSS_NAMES_LS)||'null');if(Array.isArray(n))return n;}catch(e){}return OSS_DEFAULT_NAMES;}
+function ossOpen(){
+  if(!ossBooted){
+    ossBooted=true;
+    var st=document.createElement('style');st.id='oss-style';st.textContent=OSS_SHEET_CSS;document.head.appendChild(st);
+    var sel=ossDefaultSel(new Date());ossMonth=sel.month;ossCut=sel.cut;
+    ossReady=ossLoad();
+  }else ossRender();
+}
+function ossLocal(id){try{var r=localStorage.getItem(OSS_LS+id);return r?JSON.parse(r):null;}catch(e){return null;}}
+async function ossLoad(){
+  var month=ossMonth,cut=ossCut,id=month+'-'+cut,loc=ossLocal(id);
+  ossState=loc?ossNormalize(loc,month,cut):ossNewState(month,cut,ossLastNames());
+  ossRender();
+  if(window.RRFB&&window.RRFB.loadOss){
+    try{
+      var remote=await window.RRFB.loadOss(id);
+      if(id!==ossMonth+'-'+ossCut)return;
+      if(remote&&remote.rows&&(remote.updatedMs||0)>=(ossState.updatedMs||0)){ossState=ossNormalize(remote,month,cut);ossRender();ossStatus('☁ Loaded from Firebase');}
+      else ossStatus(loc?'Loaded':'');
+    }catch(e){console.warn('[OSS] cloud load failed',e);ossStatus('Cloud unavailable – showing data saved on this device',false);}
+  }
+}
+function ossSetMonth(v){if(!v||v===ossMonth)return;ossFlush();ossMonth=v;ossReady=ossLoad();}
+function ossSetCut(c){if(c===ossCut)return;ossFlush();ossCut=c;ossReady=ossLoad();}
+function ossPersist(){
+  if(!ossState)return;
+  ossState.updatedMs=Date.now();ossStatus('Saving…');
+  clearTimeout(ossSaveTimer);ossSaveTimer=setTimeout(ossFlush,500);
+}
+async function ossFlush(){
+  clearTimeout(ossSaveTimer);ossSaveTimer=null;
+  if(!ossState)return;
+  var st=ossState,id=st.id;
+  try{localStorage.setItem(OSS_LS+id,JSON.stringify(st));}catch(e){}
+  if(window.RRFB&&window.RRFB.saveOss){
+    try{await window.RRFB.saveOss(id,st);if(id===ossMonth+'-'+ossCut)ossStatus('✓ Saved to Firebase');}
+    catch(e){console.warn('[OSS] cloud save failed',e);if(id===ossMonth+'-'+ossCut)ossStatus('Saved on this device only – publish the updated firestore.rules to sync',false);}
+  }else ossStatus('Saved on this device');
+}
+
+// ── rendering + editing ──────────────────────────────────────
+function ossRender(){
+  if(!ossState)return;
+  var host=document.getElementById('oss-host');if(!host)return;
+  host.innerHTML=ossSheetHtml(ossState,'edit');
+  var mi=document.getElementById('oss-month');if(mi&&mi.value!==ossMonth)mi.value=ossMonth;
+  ['a','b'].forEach(function(c){
+    var b=document.getElementById('oss-cut-'+c);if(!b)return;
+    b.textContent=ossPeriod(ossMonth,c).text;b.classList.toggle('active',c===ossCut);
+  });
+}
+function ossToggle(td){
+  var i=+td.dataset.r,d=td.dataset.d,row=ossState.rows[i],k=row.d.indexOf(d);
+  if(k>=0)row.d.splice(k,1);else{row.d.push(d);row.d.sort();}
+  td.textContent=k>=0?'':'✔';
+  ossUpdateTotal(i);ossPersist();
+}
+function ossUpdateTotal(i){
+  var days=ossPeriod(ossState.month,ossState.cut).days,el=document.getElementById('oss-tot-'+i);
+  if(el)el.textContent=ossTotalText(ossState.rows[i],days);
+}
+function ossName(el){
+  var i=+el.dataset.r;ossState.rows[i].n=el.value;
+  if(i===0){var s=document.getElementById('oss-sig');if(s)s.textContent=el.value;}
+  ossUpdateTotal(i);
+  try{localStorage.setItem(OSS_NAMES_LS,JSON.stringify(ossState.rows.map(function(r){return r.n;})));}catch(e){}
+  ossPersist();
+}
+
+// ── print / save as PDF (A4 landscape, same design) ──────────
+function ossPrintDoc(st){
+  var W=1450,k=1040/W;
+  return '<!doctype html><html><head><meta charset="utf-8"><title>OSS Attendance '+ossEsc(ossPeriod(st.month,st.cut).text)+'</title><style>@page{size:A4 landscape;margin:.4in}html,body{margin:0;background:#fff}'+
+    OSS_SHEET_CSS+'.oss-box{width:'+Math.round(W*k)+'px;height:'+Math.round(400*k)+'px;overflow:hidden}.oss-box>div{width:'+W+'px;transform:scale('+k+');transform-origin:0 0}</style></head><body><div class="oss-box"><div>'+ossSheetHtml(st,'print')+'</div></div></body></html>';
+}
+function ossPrint(){
+  var html=ossPrintDoc(ossState);
+  var old=document.getElementById('oss-print-frame');if(old)old.remove();
+  var fr=document.createElement('iframe');
+  fr.id='oss-print-frame';fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(fr);
+  fr.onload=function(){
+    setTimeout(function(){
+      try{fr.contentWindow.focus();fr.contentWindow.print();}
+      catch(e){var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.onload=function(){w.print();};}}
+    },200);
+  };
+  fr.srcdoc=html;
+}
+window.addEventListener('rr-firebase-ready',function(){if(ossBooted&&!ossSaveTimer)ossReady=ossLoad();});
 </script>
 <script type="module">
   import './firebase-sync.js';

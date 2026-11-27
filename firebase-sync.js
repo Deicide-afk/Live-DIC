@@ -174,5 +174,15 @@ async function saveDiscounts(month, state) {
   if (!CONFIGURED || !db) throw new Error('Firebase not configured');
   await setDoc(doc(db, 'stores', STORE_ID, 'discounts', month), clean(state));
 }
-window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash, listPmf, savePmf, deletePmf, loadDiscounts, saveDiscounts };
+// OSS Attendance – one document per month and cut-off (e.g. 2026-11-b)
+async function loadOss(id) {
+  if (!CONFIGURED || !db) return null;
+  const snap = await getDoc(doc(db, 'stores', STORE_ID, 'ossAttendance', id));
+  return snap.exists() ? snap.data() : null;
+}
+async function saveOss(id, state) {
+  if (!CONFIGURED || !db) throw new Error('Firebase not configured');
+  await setDoc(doc(db, 'stores', STORE_ID, 'ossAttendance', id), clean(state));
+}
+window.RRFB = { dateKey, loadDay, saveDay, flushSave, loadWeeklySchedule, saveWeeklySchedule, loadDailyChecker, saveDailyChecker, clearDailyChecker, setStatus, loadNonCash, saveNonCash, listPmf, savePmf, deletePmf, loadDiscounts, saveDiscounts, loadOss, saveOss };
 window.dispatchEvent(new CustomEvent('rr-firebase-ready'));
